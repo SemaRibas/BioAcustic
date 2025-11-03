@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treinar Modelo - BioAcustic</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .pulse-slow {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .training-progress {
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-green-50 to-emerald-100 min-h-screen">
+    <!-- Navegação -->
+    <nav class="bg-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-2xl font-bold text-green-600">🐸 BioAcustic</a>
+                    <span class="text-gray-500">|</span>
+                    <span class="text-lg font-semibold text-gray-700">Treinamento</span>
+                </div>
+                <a href="index.html" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                    ← Voltar para o App
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Container Principal -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Instruções -->
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg fade-in">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800">Como funciona o treinamento no navegador</h3>
+                    <div class="mt-2 text-sm text-blue-700">
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>Faça upload de <strong>pelo menos 5 áudios</strong> para cada espécie</li>
+                            <li>Adicione <strong>pelo menos 2 espécies</strong> diferentes</li>
+                            <li>O modelo será treinado diretamente no seu navegador</li>
+                            <li>Após o treinamento, o modelo ficará salvo localmente</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Painel de Upload -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">📤 Upload de Áudios</h2>
+                    
+                    <!-- Input de Espécie -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nome da Espécie</label>
+                        <input 
+                            type="text" 
+                            id="speciesNameInput"
+                            placeholder="Ex: Boana faber, Scinax fuscomarginatus..."
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        >
+                        <p class="text-xs text-gray-500 mt-1">Digite o nome científico ou comum da espécie</p>
+                    </div>
+                    
+                    <!-- Upload de Arquivos -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Arquivos de Áudio</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-green-500 transition cursor-pointer" id="dropZone">
+                            <input 
+                                type="file" 
+                                id="audioFiles" 
+                                accept="audio/*" 
+                                multiple 
+                                class="hidden"
+                            >
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-600">Arraste arquivos aqui ou clique para selecionar</p>
+                            <p class="text-xs text-gray-500">WAV, MP3, OGG, FLAC</p>
+                        </div>
+                    </div>
+                    
+                    <button 
+                        id="addExamplesBtn"
+                        class="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                        ➕ Adicionar Exemplos
+                    </button>
+                </div>
+
+                <!-- Progresso do Treinamento -->
+                <div id="trainingPanel" class="bg-white rounded-xl shadow-lg p-6 mt-6 hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">🎓 Treinamento em Progresso</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700">Época <span id="currentEpoch">0</span>/<span id="totalEpochs">20</span></span>
+                                <span class="text-gray-700" id="epochProgress">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-4">
+                                <div id="progressBar" class="training-progress bg-green-500 h-4 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-blue-50 p-3 rounded-lg">
+                                <p class="text-xs text-gray-600">Loss</p>
+                                <p class="text-xl font-bold text-blue-600" id="currentLoss">-</p>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded-lg">
+                                <p class="text-xs text-gray-600">Acurácia</p>
+                                <p class="text-xl font-bold text-green-600" id="currentAccuracy">-</p>
+                            </div>
+                        </div>
+                        
+                        <div id="trainingLog" class="bg-gray-50 p-3 rounded-lg h-32 overflow-y-auto text-xs font-mono text-gray-700">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Painel Lateral -->
+            <div class="space-y-6">
+                <!-- Estatísticas -->
+                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">📊 Dataset</h3>
+                    <div id="datasetStats" class="space-y-3">
+                        <div class="text-center text-gray-500 py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                            <p class="mt-2 text-sm">Nenhuma amostra ainda</p>
+                        </div>
+                    </div>
+                    
+                    <div id="trainBtnContainer" class="mt-4 hidden">
+                        <button 
+                            id="trainModelBtn"
+                            class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-semibold disabled:bg-gray-300"
+                        >
+                            🎓 Treinar Modelo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modelo Atual -->
+                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">🧠 Modelo Atual</h3>
+                    <div id="modelInfo">
+                        <div class="text-center text-gray-500 py-4">
+                            <p class="text-sm">Nenhum modelo treinado</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 space-y-2">
+                        <button 
+                            id="saveModelBtn"
+                            class="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold disabled:bg-gray-300"
+                            disabled
+                        >
+                            💾 Salvar Modelo
+                        </button>
+                        <button 
+                            id="deleteModelBtn"
+                            class="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-semibold"
+                        >
+                            🗑️ Limpar Modelo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ações -->
+                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">⚙️ Ações</h3>
+                    <div class="space-y-2">
+                        <button 
+                            id="clearDataBtn"
+                            class="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
+                        >
+                            🧹 Limpar Dados
+                        </button>
+                        <button 
+                            id="exportDataBtn"
+                            class="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+                        >
+                            📦 Exportar Dataset
+                        </button>
+                        <button 
+                            id="importDataBtn"
+                            class="w-full px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition"
+                        >
+                            📥 Importar Dataset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg hidden">
+        <p id="toastMessage"></p>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        // Verificar TensorFlow.js
+        if (typeof tf === 'undefined') {
+            console.error('❌ TensorFlow.js não carregado!');
+            alert('Erro: TensorFlow.js não foi carregado. Verifique sua conexão com a internet.');
+        } else {
+            console.log('✅ TensorFlow.js carregado:', tf.version.tfjs);
+        }
+        
+        import { AudioProcessor } from './js/audio.js';
+        import { BrowserTrainer } from './js/trainer.js';
+
+        // Inicializar
+        const audioProcessor = new AudioProcessor();
+        const trainer = new BrowserTrainer();
+        let uploadedFiles = [];
+        
+        console.log('✅ AudioProcessor inicializado');
+        console.log('✅ BrowserTrainer inicializado');
+
+        // Elementos DOM
+        const speciesNameInput = document.getElementById('speciesNameInput');
+        const audioFiles = document.getElementById('audioFiles');
+        const dropZone = document.getElementById('dropZone');
+        const addExamplesBtn = document.getElementById('addExamplesBtn');
+        const datasetStats = document.getElementById('datasetStats');
+        const trainBtnContainer = document.getElementById('trainBtnContainer');
+        const trainModelBtn = document.getElementById('trainModelBtn');
+        const trainingPanel = document.getElementById('trainingPanel');
+        const saveModelBtn = document.getElementById('saveModelBtn');
+        const deleteModelBtn = document.getElementById('deleteModelBtn');
+        const clearDataBtn = document.getElementById('clearDataBtn');
+        const exportDataBtn = document.getElementById('exportDataBtn');
+        const importDataBtn = document.getElementById('importDataBtn');
+        const modelInfo = document.getElementById('modelInfo');
+
+        // Drop zone
+        dropZone.addEventListener('click', () => audioFiles.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-green-500', 'bg-green-50');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-green-500', 'bg-green-50');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-green-500', 'bg-green-50');
+            audioFiles.files = e.dataTransfer.files;
+            handleFileSelection();
+        });
+
+        audioFiles.addEventListener('change', handleFileSelection);
+
+        function handleFileSelection() {
+            uploadedFiles = Array.from(audioFiles.files);
+            showToast(`${uploadedFiles.length} arquivo(s) selecionado(s)`);
+        }
+
+        // Adicionar exemplos
+        addExamplesBtn.addEventListener('click', async () => {
+            const speciesName = speciesNameInput.value.trim();
+            
+            if (!speciesName) {
+                showToast('Digite o nome da espécie!', 'error');
+                return;
+            }
+            
+            if (uploadedFiles.length === 0) {
+                showToast('Selecione arquivos de áudio!', 'error');
+                return;
+            }
+
+            addExamplesBtn.disabled = true;
+            addExamplesBtn.textContent = '⏳ Processando...';
+
+            try {
+                let successCount = 0;
+                let errorCount = 0;
+                
+                for (let i = 0; i < uploadedFiles.length; i++) {
+                    const file = uploadedFiles[i];
+                    showToast(`Processando ${i + 1}/${uploadedFiles.length}: ${file.name}`);
+                    
+                    try {
+                        // Processar áudio
+                        const audioBuffer = await loadAudioFile(file);
+                        const tensor3D = await audioProcessor.processAudioForTraining(audioBuffer);
+                        
+                        // Adicionar ao dataset
+                        trainer.addTrainingExample(tensor3D, speciesName);
+                        successCount++;
+                        
+                    } catch (fileError) {
+                        console.error(`Erro ao processar ${file.name}:`, fileError);
+                        errorCount++;
+                        showToast(`❌ Erro em ${file.name}: ${fileError.message}`, 'error');
+                    }
+                }
+
+                if (successCount > 0) {
+                    showToast(`✅ ${successCount} exemplos adicionados para ${speciesName}`, 'success');
+                }
+                
+                if (errorCount > 0) {
+                    showToast(`⚠️ ${errorCount} arquivo(s) falharam`, 'error');
+                }
+                
+                // Limpar inputs apenas se houver sucesso
+                if (successCount > 0) {
+                    speciesNameInput.value = '';
+                    audioFiles.value = '';
+                    uploadedFiles = [];
+                    
+                    // Atualizar UI
+                    updateDatasetStats();
+                }
+
+            } catch (error) {
+                console.error('Erro geral ao processar áudios:', error);
+                showToast('Erro ao processar áudios: ' + error.message, 'error');
+            } finally {
+                addExamplesBtn.disabled = false;
+                addExamplesBtn.textContent = '➕ Adicionar Exemplos';
+            }
+        });
+
+        // Treinar modelo
+        trainModelBtn.addEventListener('click', async () => {
+            if (!trainer.canTrain()) {
+                showToast('Dados insuficientes! Mínimo: 2 espécies com 5 amostras cada.', 'error');
+                return;
+            }
+
+            trainModelBtn.disabled = true;
+            trainingPanel.classList.remove('hidden');
+            
+            const totalEpochs = 20;
+            document.getElementById('totalEpochs').textContent = totalEpochs;
+
+            try {
+                await trainer.train(totalEpochs, 8, (epoch, logs) => {
+                    // Atualizar progresso
+                    const progress = ((epoch + 1) / totalEpochs) * 100;
+                    document.getElementById('progressBar').style.width = progress + '%';
+                    document.getElementById('currentEpoch').textContent = epoch + 1;
+                    document.getElementById('epochProgress').textContent = Math.round(progress) + '%';
+                    document.getElementById('currentLoss').textContent = logs.loss.toFixed(4);
+                    document.getElementById('currentAccuracy').textContent = (logs.acc * 100).toFixed(2) + '%';
+                    
+                    // Log
+                    const logEntry = `Época ${epoch + 1}: loss=${logs.loss.toFixed(4)}, acc=${(logs.acc * 100).toFixed(2)}%\n`;
+                    document.getElementById('trainingLog').textContent += logEntry;
+                    document.getElementById('trainingLog').scrollTop = document.getElementById('trainingLog').scrollHeight;
+                });
+
+                showToast('✅ Treinamento concluído!', 'success');
+                saveModelBtn.disabled = false;
+                updateModelInfo();
+
+            } catch (error) {
+                console.error('Erro no treinamento:', error);
+                showToast('Erro no treinamento: ' + error.message, 'error');
+            } finally {
+                trainModelBtn.disabled = false;
+            }
+        });
+
+        // Salvar modelo
+        saveModelBtn.addEventListener('click', async () => {
+            try {
+                await trainer.saveModel();
+                showToast('✅ Modelo salvo no navegador!', 'success');
+                updateModelInfo();
+            } catch (error) {
+                showToast('Erro ao salvar: ' + error.message, 'error');
+            }
+        });
+
+        // Deletar modelo
+        deleteModelBtn.addEventListener('click', async () => {
+            if (confirm('Tem certeza que deseja deletar o modelo treinado?')) {
+                await trainer.deleteModel();
+                saveModelBtn.disabled = true;
+                updateModelInfo();
+                showToast('Modelo deletado', 'success');
+            }
+        });
+
+        // Limpar dados
+        clearDataBtn.addEventListener('click', () => {
+            if (confirm('Tem certeza que deseja limpar todos os dados de treinamento?')) {
+                trainer.clearTrainingData();
+                updateDatasetStats();
+                showToast('Dados limpos', 'success');
+            }
+        });
+
+        // Exportar dataset
+        exportDataBtn.addEventListener('click', () => {
+            const data = trainer.exportTrainingData();
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bioacustic-dataset-${Date.now()}.json`;
+            a.click();
+            showToast('Dataset exportado!', 'success');
+        });
+
+        // Importar dataset
+        importDataBtn.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                const text = await file.text();
+                const data = JSON.parse(text);
+                trainer.importTrainingData(data);
+                updateDatasetStats();
+                showToast('Dataset importado!', 'success');
+            };
+            input.click();
+        });
+
+        // Funções auxiliares
+        function loadAudioFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const audioBuffer = await audioContext.decodeAudioData(e.target.result);
+                        resolve(audioBuffer);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function updateDatasetStats() {
+            const stats = trainer.getTrainingStats();
+            
+            if (stats.length === 0) {
+                datasetStats.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        <p class="mt-2 text-sm">Nenhuma amostra ainda</p>
+                    </div>
+                `;
+                trainBtnContainer.classList.add('hidden');
+                return;
+            }
+
+            const totalSamples = stats.reduce((sum, s) => sum + s.count, 0);
+            
+            let html = `
+                <div class="bg-green-50 p-3 rounded-lg mb-3">
+                    <p class="text-sm text-gray-600">Total de Amostras</p>
+                    <p class="text-2xl font-bold text-green-600">${totalSamples}</p>
+                    <p class="text-xs text-gray-500">${stats.length} espécie(s)</p>
+                </div>
+                <div class="space-y-2">
+            `;
+
+            for (const stat of stats) {
+                const isEnough = stat.count >= 5;
+                const color = isEnough ? 'green' : 'yellow';
+                html += `
+                    <div class="flex justify-between items-center p-2 bg-${color}-50 rounded">
+                        <span class="text-sm font-medium text-gray-700 truncate">${stat.species}</span>
+                        <span class="text-sm font-bold text-${color}-600">${stat.count}</span>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            datasetStats.innerHTML = html;
+
+            // Mostrar botão de treinar se tiver dados suficientes
+            if (trainer.canTrain()) {
+                trainBtnContainer.classList.remove('hidden');
+            } else {
+                trainBtnContainer.classList.add('hidden');
+            }
+        }
+
+        async function updateModelInfo() {
+            const metadata = await trainer.loadModel();
+            
+            if (metadata) {
+                modelInfo.innerHTML = `
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Classes:</span>
+                            <span class="font-semibold">${metadata.numClasses}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Treinado em:</span>
+                            <span class="font-semibold">${new Date(metadata.trainedAt).toLocaleString('pt-BR')}</span>
+                        </div>
+                        <div class="mt-2 pt-2 border-t">
+                            <p class="text-xs text-gray-600 mb-1">Espécies:</p>
+                            <div class="flex flex-wrap gap-1">
+                                ${metadata.classNames.map(name => 
+                                    `<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">${name}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                saveModelBtn.disabled = false;
+            } else {
+                modelInfo.innerHTML = `
+                    <div class="text-center text-gray-500 py-4">
+                        <p class="text-sm">Nenhum modelo treinado</p>
+                    </div>
+                `;
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.classList.remove('hidden', 'bg-gray-800', 'bg-red-600', 'bg-green-600');
+            
+            if (type === 'error') {
+                toast.classList.add('bg-red-600');
+            } else if (type === 'success') {
+                toast.classList.add('bg-green-600');
+            } else {
+                toast.classList.add('bg-gray-800');
+            }
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Carregar modelo ao iniciar
+        updateModelInfo();
+        
+        console.log('🎓 Módulo de treinamento inicializado');
+        console.log('📋 Para testar:');
+        console.log('   1. Digite nome da espécie');
+        console.log('   2. Selecione 5+ arquivos de áudio');
+        console.log('   3. Clique "Adicionar Exemplos"');
+        console.log('   4. Repita para outra espécie');
+        console.log('   5. Clique "Treinar Modelo"');
+    </script>
+</body>
+</html>

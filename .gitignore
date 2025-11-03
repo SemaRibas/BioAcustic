@@ -1,0 +1,108 @@
+# .gitignore para Projeto BioAcustic
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv
+
+# ===== Jupyter Notebook =====
+.ipynb_checkpoints
+*.ipynb
+
+# ===== IDEs =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== Dados =====
+# Dados brutos (muito grandes)
+backend/data/raw/**/*.mp3
+backend/data/raw/**/*.wav
+backend/data/raw/**/*.flac
+
+# Espectrogramas processados
+backend/data/processed/**/*.npy
+backend/data/processed/**/*.png
+
+# Manter estrutura de diretórios
+!backend/data/raw/.gitkeep
+!backend/data/processed/.gitkeep
+
+# ===== Modelos =====
+# Modelos treinados (muito grandes)
+backend/models/**/*.h5
+backend/models/**/*.pb
+backend/models/**/variables/
+backend/models/**/assets/
+
+# Modelos TensorFlow.js
+frontend/assets/model/*.bin
+frontend/assets/model/model.json
+
+# Manter metadados
+!frontend/assets/model/metadata.json
+!frontend/assets/model/class_names.json
+
+# Logs
+backend/models/**/logs/
+*.log
+
+# ===== Sistema Operacional =====
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+# ===== Outros =====
+# Temporários
+*.tmp
+*.bak
+*.cache
+
+# Secrets (se houver API keys)
+.env
+secrets.json
+
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Arquivos grandes de exemplo
+*.zip
+*.tar.gz
+*.rar

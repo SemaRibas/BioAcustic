@@ -1,0 +1,49 @@
+{
+  "modelInfo": {
+    "name": "Amphibian Bioacoustic Classifier",
+    "version": "demo",
+    "architecture": "mobilenet",
+    "description": "Classificador de espécies de anfíbios baseado em vocalizações - MODELO DEMO"
+  },
+  "inputSpec": {
+    "shape": [128, 128, 3],
+    "dtype": "float32",
+    "range": [0, 1],
+    "description": "Mel-espectrograma normalizado (128x128x3)"
+  },
+  "outputSpec": {
+    "shape": [8],
+    "dtype": "float32",
+    "description": "Probabilidades para cada espécie"
+  },
+  "classes": [
+    "Boana faber",
+    "Boana albopunctata",
+    "Scinax fuscomarginatus",
+    "Dendropsophus minutus",
+    "Leptodactylus fuscus",
+    "Physalaemus cuvieri",
+    "Rhinella ornata",
+    "Hypsiboas lundii"
+  ],
+  "numClasses": 8,
+  "preprocessing": {
+    "sampleRate": 22050,
+    "duration": 3.0,
+    "nMels": 128,
+    "nFFT": 2048,
+    "hopLength": 512,
+    "fmin": 50,
+    "fmax": 8000
+  },
+  "performance": {
+    "trainingEpochs": "N/A - Modelo Demo",
+    "learningRate": 0.0001
+  },
+  "usage": {
+    "loadModel": "tf.loadLayersModel('./assets/model/model.json')",
+    "predict": "model.predict(tf.tensor4d([melSpectrogram]))"
+  },
+  "status": "demo",
+  "message": "Este é um arquivo de metadados de demonstração. Para usar o sistema completo, você precisa treinar um modelo seguindo os passos em QUICKSTART.md"
+}
