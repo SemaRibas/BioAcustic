@@ -929,24 +929,41 @@
             }
 
             try {
-                // Exportar pesos do modelo
-                const modelJson = await trainer.model.toJSON();
-                const weights = await trainer.model.getWeights();
-                const weightsData = weights.map(w => Array.from(w.dataSync()));
+                // Salvar modelo temporariamente para obter formato correto
+                const saveResult = await trainer.model.save('indexeddb://temp-export-model');
+                
+                // Carregar de volta para obter o formato completo
+                const loadedModel = await tf.loadLayersModel('indexeddb://temp-export-model');
+                const modelArtifacts = await tf.io.fromMemory(
+                    await loadedModel.toJSON(),
+                    loadedModel.getWeights().map(w => w.arrayBuffer())
+                );
+                
+                // Exportar pesos
+                const weights = loadedModel.getWeights();
+                const weightsData = await Promise.all(weights.map(async w => Array.from(w.dataSync())));
                 
                 // Criar pacote completo
                 const modelPackage = {
                     version: '1.0',
                     timestamp: new Date().toISOString(),
-                    model: modelJson,
-                    weights: weightsData,
-                    weightsShapes: weights.map(w => w.shape),
+                    modelTopology: modelArtifacts.modelTopology || await loadedModel.toJSON(),
+                    weightSpecs: modelArtifacts.weightSpecs || weights.map((w, i) => ({
+                        name: `weight_${i}`,
+                        shape: w.shape,
+                        dtype: w.dtype
+                    })),
+                    weightData: weightsData,
                     classNames: trainer.classNames,
                     metadata: {
                         numClasses: trainer.classNames.length,
                         trainedSamples: Array.from(trainer.trainingData.entries()).map(([k, v]) => ({species: k, count: v.length}))
                     }
                 };
+                
+                // Limpar modelo temporário
+                await tf.io.removeModel('indexeddb://temp-export-model');
+                loadedModel.dispose();
 
                 const blob = new Blob([JSON.stringify(modelPackage)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -975,20 +992,21 @@
                     const modelPackage = JSON.parse(text);
                     
                     // Validar formato
-                    if (!modelPackage.model || !modelPackage.weights || !modelPackage.classNames) {
-                        throw new Error('Arquivo de modelo inválido');
+                    if (!modelPackage.modelTopology || !modelPackage.weightData || !modelPackage.classNames) {
+                        throw new Error('Arquivo de modelo inválido - faltam propriedades necessárias');
                     }
 
-                    // Reconstruir modelo
-                    const model = await tf.models.modelFromJSON(modelPackage.model);
-                    
-                    // Restaurar pesos
-                    const weightTensors = modelPackage.weights.map((data, i) => 
-                        tf.tensor(data, modelPackage.weightsShapes[i])
-                    );
-                    model.setWeights(weightTensors);
+                    // Reconstruir modelo usando tf.loadLayersModel com formato correto
+                    const model = await tf.loadLayersModel(tf.io.fromMemory({
+                        modelTopology: modelPackage.modelTopology,
+                        weightSpecs: modelPackage.weightSpecs,
+                        weightData: new Float32Array(modelPackage.weightData.flat()).buffer
+                    }));
                     
                     // Atualizar trainer
+                    if (trainer.model) {
+                        trainer.model.dispose();
+                    }
                     trainer.model = model;
                     trainer.classNames = modelPackage.classNames;
                     
@@ -997,9 +1015,6 @@
                     
                     updateModelInfo();
                     uiManager.showNotification('✅ Modelo importado e salvo!', 'success');
-                    
-                    // Limpar tensores temporários
-                    weightTensors.forEach(t => t.dispose());
                 } catch (error) {
                     console.error('Erro ao importar modelo:', error);
                     uiManager.showNotification('❌ Erro ao importar: ' + error.message, 'error');
@@ -1033,11 +1048,17 @@
                         const text = await file.text();
                         const pkg = JSON.parse(text);
                         
-                        const model = await tf.models.modelFromJSON(pkg.model);
-                        const weightTensors = pkg.weights.map((data, i) => 
-                            tf.tensor(data, pkg.weightsShapes[i])
-                        );
-                        model.setWeights(weightTensors);
+                        // Validar formato
+                        if (!pkg.modelTopology || !pkg.weightData || !pkg.classNames) {
+                            throw new Error(`Formato inválido no arquivo ${file.name}`);
+                        }
+                        
+                        // Carregar modelo com formato correto
+                        const model = await tf.loadLayersModel(tf.io.fromMemory({
+                            modelTopology: pkg.modelTopology,
+                            weightSpecs: pkg.weightSpecs,
+                            weightData: new Float32Array(pkg.weightData.flat()).buffer
+                        }));
                         
                         models.push({
                             model: model,
@@ -1046,7 +1067,6 @@
                         });
                         
                         pkg.classNames.forEach(c => allClassNames.add(c));
-                        weightTensors.forEach(t => t.dispose());
                     }
 
                     // Criar ensemble (wrapper que usa todos os modelos)
