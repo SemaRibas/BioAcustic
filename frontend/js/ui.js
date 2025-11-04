@@ -56,7 +56,7 @@ export class UIManager {
     }
     
     showProcessing(show) {
-        const processingDiv = document.getElementById('processingAnimation');
+        const processingDiv = document.getElementById('loadingOverlay');
         
         if (show) {
             processingDiv.classList.remove('hidden');
