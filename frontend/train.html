@@ -637,11 +637,11 @@
             trainModelBtn.disabled = true;
             trainingPanel.classList.remove('hidden');
             
-            const totalEpochs = 20;
+            const totalEpochs = 50;
             document.getElementById('totalEpochs').textContent = totalEpochs;
 
             try {
-                await trainer.train(totalEpochs, 8, (epoch, logs) => {
+                await trainer.train(totalEpochs, 16, (epoch, logs) => {
                     // Atualizar progresso
                     const progress = ((epoch + 1) / totalEpochs) * 100;
                     document.getElementById('progressBar').style.width = progress + '%';
