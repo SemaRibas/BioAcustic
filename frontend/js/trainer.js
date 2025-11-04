@@ -80,9 +80,9 @@ export class BrowserTrainer {
             activation: 'relu',
             padding: 'same'
         }));
-        model.add(tf.layers.batchNormalization());
+        model.add(tf.layers.batchNormalization({ momentum: 0.99 }));
         model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
-        model.add(tf.layers.dropout({ rate: 0.3 }));
+        model.add(tf.layers.dropout({ rate: 0.2 }));
         
         // Bloco 2: Conv2D + BatchNorm + Pooling
         model.add(tf.layers.conv2d({
@@ -91,9 +91,9 @@ export class BrowserTrainer {
             activation: 'relu',
             padding: 'same'
         }));
-        model.add(tf.layers.batchNormalization());
+        model.add(tf.layers.batchNormalization({ momentum: 0.99 }));
         model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
-        model.add(tf.layers.dropout({ rate: 0.3 }));
+        model.add(tf.layers.dropout({ rate: 0.2 }));
         
         // Bloco 3: Conv2D + BatchNorm + Pooling
         model.add(tf.layers.conv2d({
@@ -102,26 +102,27 @@ export class BrowserTrainer {
             activation: 'relu',
             padding: 'same'
         }));
-        model.add(tf.layers.batchNormalization());
+        model.add(tf.layers.batchNormalization({ momentum: 0.99 }));
         model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
-        model.add(tf.layers.dropout({ rate: 0.4 }));
+        model.add(tf.layers.dropout({ rate: 0.3 }));
         
-        // Flatten e Dense (removido bloco 4 para evitar travamento)
+        // Flatten e Dense
         model.add(tf.layers.flatten());
-        model.add(tf.layers.dropout({ rate: 0.5 }));
+        model.add(tf.layers.dropout({ rate: 0.4 }));
         
         // Camadas Dense
         model.add(tf.layers.dense({ 
             units: 128, 
             activation: 'relu'
         }));
-        model.add(tf.layers.dropout({ rate: 0.5 }));
+        model.add(tf.layers.batchNormalization({ momentum: 0.99 }));
+        model.add(tf.layers.dropout({ rate: 0.4 }));
         
         model.add(tf.layers.dense({ units: numClasses, activation: 'softmax' }));
         
-        // Compilar com learning rate otimizado
+        // Compilar com learning rate mais alto para convergência rápida
         model.compile({
-            optimizer: tf.train.adam(0.001),
+            optimizer: tf.train.adam(0.003),
             loss: 'categoricalCrossentropy',
             metrics: ['accuracy']
         });
@@ -162,7 +163,7 @@ export class BrowserTrainer {
         });
     }
     
-    async train(epochs = 50, batchSize = 16, onEpochEnd = null) {
+    async train(epochs = 20, batchSize = 16, onEpochEnd = null) {
         if (!this.canTrain()) {
             throw new Error('Dados insuficientes. Mínimo: 2 espécies com 5 amostras cada.');
         }
