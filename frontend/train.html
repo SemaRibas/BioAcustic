@@ -685,10 +685,15 @@
             
             // Calcular escalas
             const maxEpoch = Math.max(...data.epochs);
-            const maxValue = maxY || Math.max(
-                ...data.trainLoss.concat(data.valLoss || []),
-                ...data.trainAcc.concat(data.valAcc || [])
-            );
+            
+            // Coletar todos os valores para calcular escala
+            const allValues = [];
+            if (data.trainLoss) allValues.push(...data.trainLoss);
+            if (data.valLoss) allValues.push(...data.valLoss.filter(v => v > 0));
+            if (data.trainAcc) allValues.push(...data.trainAcc);
+            if (data.valAcc) allValues.push(...data.valAcc.filter(v => v > 0));
+            
+            const maxValue = maxY || (allValues.length > 0 ? Math.max(...allValues) : 100);
             const minValue = 0;
             
             const scaleX = (width - 2 * padding) / maxEpoch;
@@ -755,7 +760,9 @@
             colors.forEach((color, index) => {
                 const key = index === 0 ? 'train' : 'val';
                 const dataKey = canvas.id === 'lossChart' ? key + 'Loss' : key + 'Acc';
-                drawLine(data[dataKey], color);
+                if (data[dataKey] && data[dataKey].length > 0) {
+                    drawLine(data[dataKey], color);
+                }
             });
             
             // Desenhar legenda
@@ -929,31 +936,32 @@
             }
 
             try {
-                // Salvar modelo temporariamente para obter formato correto
-                const saveResult = await trainer.model.save('indexeddb://temp-export-model');
+                // Criar handler customizado para capturar os dados
+                let savedArtifacts = null;
+                const captureHandler = {
+                    save: async (artifacts) => {
+                        savedArtifacts = artifacts;
+                        return { modelArtifactsInfo: { dateSaved: new Date(), modelTopologyType: 'JSON' } };
+                    }
+                };
                 
-                // Carregar de volta para obter o formato completo
-                const loadedModel = await tf.loadLayersModel('indexeddb://temp-export-model');
-                const modelArtifacts = await tf.io.fromMemory(
-                    await loadedModel.toJSON(),
-                    loadedModel.getWeights().map(w => w.arrayBuffer())
-                );
+                // Salvar para capturar artifacts
+                await trainer.model.save(captureHandler);
                 
-                // Exportar pesos
-                const weights = loadedModel.getWeights();
-                const weightsData = await Promise.all(weights.map(async w => Array.from(w.dataSync())));
+                if (!savedArtifacts) {
+                    throw new Error('Falha ao capturar artifacts do modelo');
+                }
+                
+                // Converter weightData para array
+                const weightDataArray = Array.from(new Float32Array(savedArtifacts.weightData));
                 
                 // Criar pacote completo
                 const modelPackage = {
                     version: '1.0',
                     timestamp: new Date().toISOString(),
-                    modelTopology: modelArtifacts.modelTopology || await loadedModel.toJSON(),
-                    weightSpecs: modelArtifacts.weightSpecs || weights.map((w, i) => ({
-                        name: `weight_${i}`,
-                        shape: w.shape,
-                        dtype: w.dtype
-                    })),
-                    weightData: weightsData,
+                    modelTopology: savedArtifacts.modelTopology,
+                    weightSpecs: savedArtifacts.weightSpecs,
+                    weightData: weightDataArray,
                     classNames: trainer.classNames,
                     metadata: {
                         numClasses: trainer.classNames.length,
@@ -961,9 +969,11 @@
                     }
                 };
                 
-                // Limpar modelo temporário
-                await tf.io.removeModel('indexeddb://temp-export-model');
-                loadedModel.dispose();
+                console.log('📦 Pacote criado:', {
+                    version: modelPackage.version,
+                    classes: modelPackage.classNames,
+                    weightsSize: weightDataArray.length
+                });
 
                 const blob = new Blob([JSON.stringify(modelPackage)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -993,14 +1003,21 @@
                     
                     // Validar formato
                     if (!modelPackage.modelTopology || !modelPackage.weightData || !modelPackage.classNames) {
+                        console.error('Estrutura do arquivo:', Object.keys(modelPackage));
                         throw new Error('Arquivo de modelo inválido - faltam propriedades necessárias');
                     }
 
+                    console.log('📥 Importando modelo...');
+                    console.log(`   Classes: ${modelPackage.classNames.join(', ')}`);
+                    console.log(`   Pesos: ${modelPackage.weightData.length} valores`);
+
                     // Reconstruir modelo usando tf.loadLayersModel com formato correto
+                    const weightDataBuffer = new Float32Array(modelPackage.weightData).buffer;
+                    
                     const model = await tf.loadLayersModel(tf.io.fromMemory({
                         modelTopology: modelPackage.modelTopology,
                         weightSpecs: modelPackage.weightSpecs,
-                        weightData: new Float32Array(modelPackage.weightData.flat()).buffer
+                        weightData: weightDataBuffer
                     }));
                     
                     // Atualizar trainer
@@ -1045,28 +1062,46 @@
                     const allClassNames = new Set();
 
                     for (const file of files) {
-                        const text = await file.text();
-                        const pkg = JSON.parse(text);
-                        
-                        // Validar formato
-                        if (!pkg.modelTopology || !pkg.weightData || !pkg.classNames) {
-                            throw new Error(`Formato inválido no arquivo ${file.name}`);
+                        try {
+                            const text = await file.text();
+                            
+                            if (!text || text.trim() === '') {
+                                throw new Error(`Arquivo ${file.name} está vazio`);
+                            }
+                            
+                            const pkg = JSON.parse(text);
+                            
+                            // Validar formato
+                            if (!pkg.modelTopology || !pkg.weightData || !pkg.classNames) {
+                                console.error('Estrutura do pacote:', Object.keys(pkg));
+                                throw new Error(`Formato inválido no arquivo ${file.name} - Exportou o modelo antes de treinar?`);
+                            }
+                            
+                            console.log(`📦 Carregando ${file.name}...`);
+                            console.log(`   Classes: ${pkg.classNames.join(', ')}`);
+                            console.log(`   Pesos: ${pkg.weightData.length} valores`);
+                            
+                            // Carregar modelo com formato correto
+                            const weightDataBuffer = new Float32Array(pkg.weightData).buffer;
+                            
+                            const model = await tf.loadLayersModel(tf.io.fromMemory({
+                                modelTopology: pkg.modelTopology,
+                                weightSpecs: pkg.weightSpecs,
+                                weightData: weightDataBuffer
+                            }));
+                            
+                            models.push({
+                                model: model,
+                                classNames: pkg.classNames,
+                                filename: file.name
+                            });
+                            
+                            pkg.classNames.forEach(c => allClassNames.add(c));
+                            
+                        } catch (fileError) {
+                            console.error(`Erro ao processar ${file.name}:`, fileError);
+                            throw new Error(`Falha em ${file.name}: ${fileError.message}`);
                         }
-                        
-                        // Carregar modelo com formato correto
-                        const model = await tf.loadLayersModel(tf.io.fromMemory({
-                            modelTopology: pkg.modelTopology,
-                            weightSpecs: pkg.weightSpecs,
-                            weightData: new Float32Array(pkg.weightData.flat()).buffer
-                        }));
-                        
-                        models.push({
-                            model: model,
-                            classNames: pkg.classNames,
-                            filename: file.name
-                        });
-                        
-                        pkg.classNames.forEach(c => allClassNames.add(c));
                     }
 
                     // Criar ensemble (wrapper que usa todos os modelos)
@@ -1099,7 +1134,8 @@
                     
                 } catch (error) {
                     console.error('Erro ao mesclar modelos:', error);
-                    uiManager.showNotification('❌ Erro ao mesclar: ' + error.message, 'error');
+                    console.error('Stack trace:', error.stack);
+                    uiManager.showNotification('❌ Erro ao mesclar: ' + (error.message || 'Erro desconhecido'), 'error');
                 }
             };
             input.click();
