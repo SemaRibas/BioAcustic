@@ -264,7 +264,16 @@
                             </div>
                         </div>
                         
-                        <div id="trainingLog" style="background: var(--gray-900); color: #10b981; padding: var(--space-md); border-radius: var(--radius-lg); height: 128px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.75rem; border: 1px solid var(--gray-700);">
+                        <!-- Gráficos de Treinamento -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); margin-top: var(--space-lg);">
+                            <div style="background: white; padding: var(--space-md); border-radius: var(--radius-lg); border: 1px solid var(--gray-200);">
+                                <p style="font-size: 0.75rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm); text-align: center;">📉 Erro (Loss)</p>
+                                <canvas id="lossChart" width="250" height="150"></canvas>
+                            </div>
+                            <div style="background: white; padding: var(--space-md); border-radius: var(--radius-lg); border: 1px solid var(--gray-200);">
+                                <p style="font-size: 0.75rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm); text-align: center;">📈 Acurácia</p>
+                                <canvas id="accuracyChart" width="250" height="150"></canvas>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -653,6 +662,121 @@
             }
         });
 
+        // Dados dos gráficos
+        const chartData = {
+            epochs: [],
+            trainLoss: [],
+            valLoss: [],
+            trainAcc: [],
+            valAcc: []
+        };
+
+        // Função para desenhar gráfico de linha
+        function drawLineChart(canvas, data, colors, maxY = null) {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 30;
+            
+            // Limpar canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            if (data.epochs.length === 0) return;
+            
+            // Calcular escalas
+            const maxEpoch = Math.max(...data.epochs);
+            const maxValue = maxY || Math.max(
+                ...data.trainLoss.concat(data.valLoss || []),
+                ...data.trainAcc.concat(data.valAcc || [])
+            );
+            const minValue = 0;
+            
+            const scaleX = (width - 2 * padding) / maxEpoch;
+            const scaleY = (height - 2 * padding) / (maxValue - minValue);
+            
+            // Desenhar grid
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            
+            // Linhas horizontais
+            for (let i = 0; i <= 5; i++) {
+                const y = height - padding - (i / 5) * (height - 2 * padding);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+                
+                // Labels
+                ctx.fillStyle = '#6b7280';
+                ctx.font = '10px Inter';
+                ctx.textAlign = 'right';
+                const value = (minValue + (i / 5) * (maxValue - minValue)).toFixed(2);
+                ctx.fillText(value, padding - 5, y + 3);
+            }
+            
+            // Função para desenhar linha
+            function drawLine(dataY, color) {
+                if (dataY.length === 0) return;
+                
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                data.epochs.forEach((epoch, i) => {
+                    if (i >= dataY.length) return;
+                    
+                    const x = padding + (epoch - 1) * scaleX;
+                    const y = height - padding - (dataY[i] - minValue) * scaleY;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                
+                ctx.stroke();
+                
+                // Desenhar pontos
+                ctx.fillStyle = color;
+                data.epochs.forEach((epoch, i) => {
+                    if (i >= dataY.length) return;
+                    
+                    const x = padding + (epoch - 1) * scaleX;
+                    const y = height - padding - (dataY[i] - minValue) * scaleY;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+            }
+            
+            // Desenhar linhas
+            colors.forEach((color, index) => {
+                const key = index === 0 ? 'train' : 'val';
+                const dataKey = canvas.id === 'lossChart' ? key + 'Loss' : key + 'Acc';
+                drawLine(data[dataKey], color);
+            });
+            
+            // Desenhar legenda
+            const legendY = 15;
+            const legendX = width - padding - 100;
+            
+            // Treinamento
+            ctx.fillStyle = colors[0];
+            ctx.fillRect(legendX, legendY - 5, 15, 3);
+            ctx.fillStyle = '#374151';
+            ctx.font = '10px Inter';
+            ctx.textAlign = 'left';
+            ctx.fillText('Treinamento', legendX + 20, legendY);
+            
+            // Validação
+            ctx.fillStyle = colors[1];
+            ctx.fillRect(legendX, legendY + 10, 15, 3);
+            ctx.fillStyle = '#374151';
+            ctx.fillText('Validação', legendX + 20, legendY + 15);
+        }
+
         // Treinar modelo
         trainModelBtn.addEventListener('click', async () => {
             if (!trainer.canTrain()) {
@@ -666,6 +790,13 @@
             
             const totalEpochs = 20;
             document.getElementById('totalEpochs').textContent = totalEpochs;
+            
+            // Resetar dados dos gráficos
+            chartData.epochs = [];
+            chartData.trainLoss = [];
+            chartData.valLoss = [];
+            chartData.trainAcc = [];
+            chartData.valAcc = [];
 
             try {
                 await trainer.train(totalEpochs, 16, (epoch, logs) => {
@@ -681,13 +812,28 @@
                     const valAcc = logs.val_acc || logs.val_accuracy || 0;
                     document.getElementById('currentAccuracy').textContent = (trainAcc * 100).toFixed(2) + '%';
                     
-                    // Log traduzido
-                    const logEntry = `Época ${epoch + 1}/${totalEpochs}\n`;
-                    const logTrain = `  Treinamento: Erro=${logs.loss.toFixed(4)}, Acurácia=${(trainAcc * 100).toFixed(2)}%\n`;
-                    const logVal = logs.val_loss ? `  Validação: Erro=${logs.val_loss.toFixed(4)}, Acurácia=${(valAcc * 100).toFixed(2)}%\n\n` : '\n';
+                    // Adicionar dados aos gráficos
+                    chartData.epochs.push(epoch + 1);
+                    chartData.trainLoss.push(logs.loss);
+                    chartData.valLoss.push(logs.val_loss || 0);
+                    chartData.trainAcc.push(trainAcc * 100);
+                    chartData.valAcc.push(valAcc * 100);
                     
-                    document.getElementById('trainingLog').textContent += logEntry + logTrain + logVal;
-                    document.getElementById('trainingLog').scrollTop = document.getElementById('trainingLog').scrollHeight;
+                    // Atualizar gráficos
+                    const lossCanvas = document.getElementById('lossChart');
+                    const accCanvas = document.getElementById('accuracyChart');
+                    
+                    drawLineChart(lossCanvas, {
+                        epochs: chartData.epochs,
+                        trainLoss: chartData.trainLoss,
+                        valLoss: chartData.valLoss
+                    }, ['#3b82f6', '#10b981'], null);
+                    
+                    drawLineChart(accCanvas, {
+                        epochs: chartData.epochs,
+                        trainAcc: chartData.trainAcc,
+                        valAcc: chartData.valAcc
+                    }, ['#3b82f6', '#10b981'], 100);
                 });
                 
                 // ATUALIZADO: Usando uiManager.showNotification
