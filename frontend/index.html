@@ -8,19 +8,20 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     
-    <!-- Tailwind CSS (CDN - OK para desenvolvimento/demonstração) -->
-    <!-- Para produção, use: npm install tailwindcss -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Design System -->
+    <link rel="stylesheet" href="./css/design-system.css">
     
     <!-- TensorFlow.js -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
     
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
         .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #3b82f6 100%);
         }
         
         .wave-animation {
@@ -55,30 +56,43 @@
             background: #2d3748;
             border-radius: 8px;
         }
+        
+        #dropZone:hover {
+            border-color: var(--primary-500) !important;
+            background: var(--primary-50) !important;
+        }
+        
+        #dropZone.drag-over {
+            border-color: var(--primary-600) !important;
+            background: var(--primary-100) !important;
+            border-style: solid !important;
+        }
+        
+        #analyzeBtn:hover:not(:disabled) {
+            transform: scale(1.05) !important;
+            box-shadow: var(--shadow-xl) !important;
+        }
     </style>
 </head>
-<body class="bg-gray-50">
+<body style="background: var(--gray-50); margin: 0; padding: 0;">
     
     <!-- Header -->
-    <header class="gradient-bg text-white py-6 shadow-lg">
-        <div class="container mx-auto px-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-frog text-4xl wave-animation"></i>
+    <header class="gradient-bg" style="padding: var(--space-3xl) var(--space-xl); color: white; box-shadow: var(--shadow-lg);">
+        <div class="container">
+            <div class="flex items-center justify-between" style="flex-wrap: wrap; gap: var(--space-lg);">
+                <div class="flex items-center gap-md">
+                    <div style="font-size: 3rem; animation: wave 2s infinite;">🐸</div>
                     <div>
-                        <h1 class="text-3xl font-bold">BioAcustic</h1>
-                        <p class="text-sm opacity-90">Classificador de Vocalizações de Anfíbios</p>
+                        <h1 style="font-size: 2rem; font-weight: 800; margin: 0;">BioAcustic</h1>
+                        <p style="font-size: 0.875rem; opacity: 0.95; margin: 0;">Classificador de Vocalizações de Anfíbios com IA</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <a href="train.html" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center space-x-2">
-                        <i class="fas fa-graduation-cap"></i>
-                        <span>Treinar Modelo</span>
+                <div class="flex items-center gap-md">
+                    <a href="train.html" class="btn btn-lg" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: white; border: 1px solid rgba(255,255,255,0.3);">
+                        🎓 Treinar Modelo
                     </a>
-                    <div class="text-right">
-                        <div id="modelStatus" class="text-sm">
-                            <i class="fas fa-circle-notch fa-spin"></i> Carregando modelo...
-                        </div>
+                    <div id="modelStatus" class="badge" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: white; border: 1px solid rgba(255,255,255,0.3);">
+                        <span class="spinner"></span> Carregando...
                     </div>
                 </div>
             </div>
@@ -92,129 +106,122 @@
         <div id="statusAlert" class="hidden mb-6 p-4 rounded-lg shadow-md"></div>
         
         <!-- Upload Section -->
-        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                <i class="fas fa-upload mr-3 text-blue-500"></i>
-                Enviar Áudio
-            </h2>
-            
-            <div class="grid md:grid-cols-2 gap-6">
-                <!-- File Upload -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-file-audio mr-2"></i>Selecionar arquivo de áudio
-                    </label>
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer">
-                        <input 
-                            type="file" 
-                            id="audioUpload" 
-                            accept="audio/*" 
-                            class="hidden"
-                        >
-                        <label for="audioUpload" class="cursor-pointer">
-                            <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-3 block"></i>
-                            <p class="text-gray-600">Clique ou arraste um arquivo</p>
-                            <p class="text-sm text-gray-400 mt-2">MP3, WAV, FLAC (máx. 10MB)</p>
+        <section class="card">
+            <div class="card-header">
+                <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: var(--space-sm);">
+                    📤 Enviar Áudio
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-xl);">
+                    <!-- File Upload -->
+                    <div>
+                        <label style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm);">
+                            📂 Selecionar arquivo
                         </label>
+                        <div id="dropZone" style="border: 2px dashed var(--gray-300); border-radius: var(--radius-xl); padding: var(--space-2xl); text-align: center; cursor: pointer; transition: all var(--transition-base); background: white;">
+                            <input type="file" id="audioUpload" accept="audio/*" style="display: none;">
+                            <label for="audioUpload" style="cursor: pointer; display: block;">
+                                <div style="font-size: 3rem; margin-bottom: var(--space-md);">🎵</div>
+                                <p style="color: var(--gray-700); font-weight: 600; margin-bottom: var(--space-xs);">Clique ou arraste um arquivo</p>
+                                <p style="font-size: 0.875rem; color: var(--gray-500);">MP3, WAV, FLAC (máx. 10MB)</p>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Record Audio -->
+                    <div>
+                        <label style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm);">
+                            🎤 Gravar ao vivo
+                        </label>
+                        <div style="border: 2px solid var(--gray-200); border-radius: var(--radius-xl); padding: var(--space-2xl); text-align: center; background: white; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <div style="font-size: 3rem; margin-bottom: var(--space-md);">🎙️</div>
+                            <button id="recordBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: var(--radius-full);">
+                                ⏺ Iniciar Gravação
+                            </button>
+                            <p id="recordingStatus" style="font-size: 0.875rem; color: var(--gray-500); margin-top: var(--space-md);"></p>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Record Audio -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-microphone mr-2"></i>Gravar ao vivo
+                <!-- Audio Player -->
+                <div id="audioPlayerContainer" class="hidden" style="margin-top: var(--space-xl);">
+                    <label style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm);">
+                        ▶️ Player de Áudio
                     </label>
-                    <div class="border-2 border-gray-300 rounded-lg p-6 text-center">
-                        <button 
-                            id="recordBtn" 
-                            class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-full transition-colors"
-                        >
-                            <i class="fas fa-microphone mr-2"></i>Iniciar Gravação
-                        </button>
-                        <p id="recordingStatus" class="text-sm text-gray-500 mt-4"></p>
+                    <div style="background: var(--gray-50); border-radius: var(--radius-lg); padding: var(--space-lg); border: 1px solid var(--gray-200);">
+                        <audio id="audioPlayer" controls style="width: 100%; margin-bottom: var(--space-md);"></audio>
+                        <div id="waveform" style="height: 120px; background: linear-gradient(135deg, var(--gray-900), var(--gray-800)); border-radius: var(--radius-md);"></div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Audio Player -->
-            <div id="audioPlayerContainer" class="hidden mt-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-play-circle mr-2"></i>Player de Áudio
-                </label>
-                <div class="bg-gray-100 rounded-lg p-4">
-                    <audio id="audioPlayer" controls class="w-full"></audio>
-                    <div id="waveform" class="mt-4 h-24"></div>
+                
+                <!-- Analyze Button -->
+                <div style="text-align: center; margin-top: var(--space-xl);">
+                    <button id="analyzeBtn" class="btn btn-primary btn-lg" disabled style="box-shadow: var(--shadow-lg); transform: scale(1); transition: transform var(--transition-base);">
+                        🧠 Analisar Vocalização
+                    </button>
                 </div>
             </div>
-            
-            <!-- Analyze Button -->
-            <div class="mt-6 text-center">
-                <button 
-                    id="analyzeBtn" 
-                    class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg transform transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled
-                >
-                    <i class="fas fa-brain mr-2"></i>Analisar Vocalização
-                </button>
-            </div>
-        </div>
+        </section>
         
-        <!-- Processing Animation -->
-        <div id="processingAnimation" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8">
-            <div class="text-center">
-                <i class="fas fa-cog fa-spin text-6xl text-blue-500 mb-4"></i>
-                <h3 class="text-xl font-bold text-gray-800 mb-2">Processando Áudio...</h3>
-                <p class="text-gray-600">Gerando espectrograma e executando inferência</p>
-                <div class="mt-4 bg-gray-200 rounded-full h-2 w-full max-w-md mx-auto">
-                    <div id="progressBar" class="progress-bar bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div style="background: white; padding: var(--space-3xl); border-radius: var(--radius-2xl); box-shadow: var(--shadow-2xl); text-align: center; min-width: 320px; animation: scaleIn 0.3s ease-out;">
+                <div style="width: 80px; height: 80px; margin: 0 auto var(--space-lg); background: linear-gradient(135deg, var(--primary-500), var(--primary-400)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; animation: pulse 2s ease-in-out infinite;">🧠</div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--gray-900); margin-bottom: var(--space-sm);">Processando Áudio...</h3>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin-bottom: var(--space-lg);">Gerando espectrograma e executando inferência</p>
+                <div class="progress">
+                    <div id="progressBar" class="progress-bar" style="width: 0%"></div>
                 </div>
+                <p id="progressText" style="font-size: 0.75rem; color: var(--gray-500); margin-top: var(--space-sm);">0%</p>
             </div>
         </div>
         
         <!-- Results Section -->
-        <div id="resultsSection" class="hidden">
-            <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                    <i class="fas fa-chart-bar mr-3 text-green-500"></i>
-                    Resultados da Classificação
-                </h2>
-                
-                <div id="resultsContainer" class="space-y-4">
-                    <!-- Resultados serão inseridos dinamicamente -->
+        <section id="resultsSection" class="hidden" style="margin-top: var(--space-2xl);">
+            <div class="card" style="margin-bottom: var(--space-xl);">
+                <div class="card-header">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: var(--space-sm);">
+                        📊 Resultados da Classificação
+                    </h2>
                 </div>
-                
-                <!-- Spectrogram Visualization -->
-                <div class="mt-8">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-3">
-                        <i class="fas fa-wave-square mr-2"></i>Mel-Espectrograma
-                    </h3>
-                    <div class="spectrogram-container">
-                        <canvas id="spectrogramCanvas" class="w-full h-64"></canvas>
+                <div class="card-body">
+                    <div id="resultsContainer" style="margin-bottom: var(--space-xl);">
+                        <!-- Resultados serão inseridos dinamicamente -->
+                    </div>
+                    
+                    <!-- Spectrogram Visualization -->
+                    <div>
+                        <h3 style="font-size: 1rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-md);">
+                            📈 Mel-Espectrograma
+                        </h3>
+                        <div style="background: linear-gradient(135deg, var(--gray-900), var(--gray-800)); border-radius: var(--radius-xl); padding: var(--space-xl);">
+                            <canvas id="spectrogramCanvas" style="width: 100%; height: 200px; border-radius: var(--radius-lg);"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <!-- Species Info Card -->
-            <div id="speciesInfoCard" class="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl shadow-lg p-8">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">
-                    <i class="fas fa-info-circle mr-2 text-blue-500"></i>Sobre a Espécie
+            <div id="speciesInfoCard" class="hidden" style="background: linear-gradient(135deg, #f0fdf4, #dbeafe); border-radius: var(--radius-xl); padding: var(--space-xl); border: 2px solid var(--primary-200); box-shadow: var(--shadow-md);">
+                <h3 style="font-size: 1.125rem; font-weight: 700; color: var(--gray-900); margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm);">
+                    ℹ️ Informações da Espécie
                 </h3>
                 <div id="speciesInfoContent">
-                    <p class="text-gray-600">Selecione uma classificação para ver detalhes</p>
+                    <p style="color: var(--gray-600);">Clique em um resultado acima para ver os detalhes da espécie</p>
                 </div>
             </div>
-        </div>
+        </section>
         
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-6 mt-16">
-        <div class="container mx-auto px-4 text-center">
-            <p class="text-sm">
-                <i class="fas fa-code mr-2"></i>
-                Desenvolvido com TensorFlow.js e Deep Learning
+    <footer style="background: var(--gray-900); color: white; padding: var(--space-2xl) 0; margin-top: var(--space-3xl);">
+        <div class="container text-center">
+            <p style="font-size: 0.875rem; margin-bottom: var(--space-sm);">
+                🧬 Desenvolvido com TensorFlow.js e Deep Learning
             </p>
-            <p class="text-xs text-gray-400 mt-2">
+            <p style="font-size: 0.75rem; color: var(--gray-400);">
                 Projeto BioAcustic © 2025 | Para fins educacionais e científicos
             </p>
         </div>
