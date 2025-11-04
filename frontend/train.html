@@ -329,11 +329,14 @@
                             <button id="clearDataBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
                                 🧹 Limpar Dados
                             </button>
-                            <button id="exportDataBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, var(--accent-purple), #7c3aed); color: white;">
-                                📦 Exportar Dataset
+                            <button id="exportModelBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, var(--accent-purple), #7c3aed); color: white;" disabled>
+                                📦 Exportar Modelo
                             </button>
-                            <button id="importDataBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, var(--secondary-500), #4f46e5); color: white;">
-                                📥 Importar Dataset
+                            <button id="importModelBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, var(--secondary-500), #4f46e5); color: white;">
+                                📥 Importar Modelo
+                            </button>
+                            <button id="mergeModelsBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                                🔗 Mesclar Modelos (Ensemble)
                             </button>
                         </div>
                     </div>
@@ -410,8 +413,9 @@
         const testModelBtn = document.getElementById('testModelBtn');
         const deleteModelBtn = document.getElementById('deleteModelBtn');
         const clearDataBtn = document.getElementById('clearDataBtn');
-        const exportDataBtn = document.getElementById('exportDataBtn');
-        const importDataBtn = document.getElementById('importDataBtn');
+        const exportModelBtn = document.getElementById('exportModelBtn');
+        const importModelBtn = document.getElementById('importModelBtn');
+        const mergeModelsBtn = document.getElementById('mergeModelsBtn');
         const modelInfo = document.getElementById('modelInfo');
 
         // Estado dos arquivos selecionados
@@ -689,6 +693,7 @@
                 // ATUALIZADO: Usando uiManager.showNotification
                 uiManager.showNotification('✅ Treinamento concluído!', 'success');
                 saveModelBtn.disabled = false;
+                exportModelBtn.disabled = false;
                 
                 // Aguardar um momento para garantir estabilidade antes de salvar
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -770,32 +775,166 @@
             }
         });
 
-        // Exportar dataset
-        exportDataBtn.addEventListener('click', () => {
-            const data = trainer.exportTrainingData();
-            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `bioacustic-dataset-${Date.now()}.json`;
-            a.click();
-            // ATUALIZADO: Usando uiManager.showNotification
-            uiManager.showNotification('Dataset exportado!', 'success');
+        // Exportar modelo
+        exportModelBtn.addEventListener('click', async () => {
+            if (!trainer.model) {
+                uiManager.showNotification('❌ Nenhum modelo para exportar', 'error');
+                return;
+            }
+
+            try {
+                // Exportar pesos do modelo
+                const modelJson = await trainer.model.toJSON();
+                const weights = await trainer.model.getWeights();
+                const weightsData = weights.map(w => Array.from(w.dataSync()));
+                
+                // Criar pacote completo
+                const modelPackage = {
+                    version: '1.0',
+                    timestamp: new Date().toISOString(),
+                    model: modelJson,
+                    weights: weightsData,
+                    weightsShapes: weights.map(w => w.shape),
+                    classNames: trainer.classNames,
+                    metadata: {
+                        numClasses: trainer.classNames.length,
+                        trainedSamples: Array.from(trainer.trainingData.entries()).map(([k, v]) => ({species: k, count: v.length}))
+                    }
+                };
+
+                const blob = new Blob([JSON.stringify(modelPackage)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `bioacustic-model-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                uiManager.showNotification('✅ Modelo exportado com sucesso!', 'success');
+            } catch (error) {
+                console.error('Erro ao exportar modelo:', error);
+                uiManager.showNotification('❌ Erro ao exportar: ' + error.message, 'error');
+            }
         });
 
-        // Importar dataset
-        importDataBtn.addEventListener('click', () => {
+        // Importar modelo
+        importModelBtn.addEventListener('click', () => {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';
             input.onchange = async (e) => {
-                const file = e.target.files[0];
-                const text = await file.text();
-                const data = JSON.parse(text);
-                trainer.importTrainingData(data);
-                updateDatasetStats();
-                // ATUALIZADO: Usando uiManager.showNotification
-                uiManager.showNotification('Dataset importado!', 'success');
+                try {
+                    const file = e.target.files[0];
+                    const text = await file.text();
+                    const modelPackage = JSON.parse(text);
+                    
+                    // Validar formato
+                    if (!modelPackage.model || !modelPackage.weights || !modelPackage.classNames) {
+                        throw new Error('Arquivo de modelo inválido');
+                    }
+
+                    // Reconstruir modelo
+                    const model = await tf.models.modelFromJSON(modelPackage.model);
+                    
+                    // Restaurar pesos
+                    const weightTensors = modelPackage.weights.map((data, i) => 
+                        tf.tensor(data, modelPackage.weightsShapes[i])
+                    );
+                    model.setWeights(weightTensors);
+                    
+                    // Atualizar trainer
+                    trainer.model = model;
+                    trainer.classNames = modelPackage.classNames;
+                    
+                    // Salvar no navegador
+                    await trainer.saveModel();
+                    
+                    updateModelInfo();
+                    uiManager.showNotification('✅ Modelo importado e salvo!', 'success');
+                    
+                    // Limpar tensores temporários
+                    weightTensors.forEach(t => t.dispose());
+                } catch (error) {
+                    console.error('Erro ao importar modelo:', error);
+                    uiManager.showNotification('❌ Erro ao importar: ' + error.message, 'error');
+                }
+            };
+            input.click();
+        });
+
+        // Mesclar modelos (Ensemble)
+        mergeModelsBtn.addEventListener('click', async () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.multiple = true;
+            input.onchange = async (e) => {
+                try {
+                    const files = Array.from(e.target.files);
+                    
+                    if (files.length < 2) {
+                        uiManager.showNotification('⚠️ Selecione pelo menos 2 modelos para mesclar', 'warning');
+                        return;
+                    }
+
+                    uiManager.showNotification(`🔄 Carregando ${files.length} modelos...`, 'info');
+
+                    // Carregar todos os modelos
+                    const models = [];
+                    const allClassNames = new Set();
+
+                    for (const file of files) {
+                        const text = await file.text();
+                        const pkg = JSON.parse(text);
+                        
+                        const model = await tf.models.modelFromJSON(pkg.model);
+                        const weightTensors = pkg.weights.map((data, i) => 
+                            tf.tensor(data, pkg.weightsShapes[i])
+                        );
+                        model.setWeights(weightTensors);
+                        
+                        models.push({
+                            model: model,
+                            classNames: pkg.classNames,
+                            filename: file.name
+                        });
+                        
+                        pkg.classNames.forEach(c => allClassNames.add(c));
+                        weightTensors.forEach(t => t.dispose());
+                    }
+
+                    // Criar ensemble (wrapper que usa todos os modelos)
+                    console.log(`🔗 Mesclando ${models.length} modelos...`);
+                    console.log(`   Classes totais: ${allClassNames.size}`);
+                    
+                    // Armazenar ensemble no trainer
+                    trainer.ensembleModels = models;
+                    trainer.classNames = Array.from(allClassNames).sort();
+                    
+                    // Usar o primeiro modelo como base (para salvamento)
+                    trainer.model = models[0].model;
+                    
+                    // Salvar informação do ensemble
+                    const metadata = {
+                        isEnsemble: true,
+                        modelCount: models.length,
+                        modelFiles: models.map(m => m.filename),
+                        classNames: trainer.classNames,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    localStorage.setItem('bioacustic-ensemble-metadata', JSON.stringify(metadata));
+                    
+                    await trainer.saveModel();
+                    updateModelInfo();
+                    
+                    uiManager.showNotification(`✅ Ensemble criado com ${models.length} modelos!`, 'success', 5000);
+                    uiManager.showNotification(`📊 ${allClassNames.size} espécies no total`, 'info', 5000);
+                    
+                } catch (error) {
+                    console.error('Erro ao mesclar modelos:', error);
+                    uiManager.showNotification('❌ Erro ao mesclar: ' + error.message, 'error');
+                }
             };
             input.click();
         });
@@ -898,6 +1037,7 @@
                     `;
                     saveModelBtn.disabled = false;
                     testModelBtn.disabled = false;
+                    exportModelBtn.disabled = false; // Habilitar exportação
                     
                     // ATUALIZADO: Usando uiManager.showNotification
                     uiManager.showNotification('✅ Modelo encontrado e carregado!', 'success');

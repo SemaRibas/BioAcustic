@@ -337,6 +337,11 @@ export class BrowserTrainer {
             throw new Error('Modelo não treinado');
         }
         
+        // Se for ensemble, usar votação/média
+        if (this.ensembleModels && this.ensembleModels.length > 1) {
+            return await this.predictEnsemble(spectrogram);
+        }
+        
         const inputTensor = tf.tensor4d([spectrogram]);
         const predictions = this.model.predict(inputTensor);
         const probabilities = await predictions.data();
@@ -345,6 +350,44 @@ export class BrowserTrainer {
         predictions.dispose();
         
         return Array.from(probabilities);
+    }
+    
+    async predictEnsemble(spectrogram) {
+        console.log(`🔗 Usando ensemble com ${this.ensembleModels.length} modelos`);
+        
+        const inputTensor = tf.tensor4d([spectrogram]);
+        const allPredictions = [];
+        
+        // Coletar predições de cada modelo
+        for (const modelData of this.ensembleModels) {
+            const predictions = modelData.model.predict(inputTensor);
+            const probabilities = await predictions.data();
+            allPredictions.push(Array.from(probabilities));
+            predictions.dispose();
+        }
+        
+        inputTensor.dispose();
+        
+        // Média das probabilidades (soft voting)
+        const numClasses = this.classNames.length;
+        const avgProbabilities = new Array(numClasses).fill(0);
+        
+        for (let i = 0; i < numClasses; i++) {
+            let sum = 0;
+            let count = 0;
+            
+            for (const modelPred of allPredictions) {
+                if (i < modelPred.length) {
+                    sum += modelPred[i];
+                    count++;
+                }
+            }
+            
+            avgProbabilities[i] = count > 0 ? sum / count : 0;
+        }
+        
+        console.log(`📊 Ensemble: média de ${allPredictions.length} modelos`);
+        return avgProbabilities;
     }
     
     async saveModel(modelName = 'bioacustic-browser-model') {
