@@ -142,7 +142,7 @@
     <!-- Container Principal -->
     <main class="container" style="padding: var(--space-3xl) var(--space-xl);">
         <!-- Instruções -->
-        <div class="alert alert-info fade-in" style="margin-bottom: var(--space-xl);">
+        <div class="alert alert-info fade-in" style="margin-bottom: var(--space-lg);">
             <div>
                 <h3 style="font-weight: 700; margin-bottom: var(--space-sm);">ℹ️ Como funciona o treinamento no navegador</h3>
                 <ul style="margin: 0; padding-left: var(--space-lg); list-style: disc;">
@@ -150,6 +150,19 @@
                     <li>Adicione <strong>pelo menos 2 espécies</strong> diferentes</li>
                     <li>O modelo será treinado diretamente no seu navegador</li>
                     <li>Após o treinamento, o modelo ficará salvo localmente</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Aviso sobre limites -->
+        <div class="alert" style="margin-bottom: var(--space-xl); background: linear-gradient(135deg, #fef3c7, #fde68a); border-left: 4px solid #f59e0b;">
+            <div>
+                <h3 style="font-weight: 700; margin-bottom: var(--space-sm); color: #92400e;">⚠️ IMPORTANTE: Limites de Memória GPU</h3>
+                <ul style="margin: 0; padding-left: var(--space-lg); list-style: disc; color: #78350f;">
+                    <li><strong>Máximo recomendado: 100-150 amostras totais</strong> (todas espécies somadas)</li>
+                    <li>Exemplo: 5 espécies × 20 amostras = 100 amostras ✅</li>
+                    <li>Ultrapassar esse limite pode causar erro de memória GPU e travar o navegador</li>
+                    <li>Se tiver muitos dados, processe em lotes menores</li>
                 </ul>
             </div>
         </div>
@@ -345,6 +358,15 @@
             alert('Erro: TensorFlow.js não foi carregado. Verifique sua conexão com a internet.');
         } else {
             console.log('✅ TensorFlow.js carregado:', tf.version.tfjs);
+            
+            // Configurar TensorFlow.js para otimizar memória GPU
+            tf.env().set('WEBGL_DELETE_TEXTURE_THRESHOLD', 0); // Deletar texturas imediatamente
+            tf.env().set('WEBGL_FORCE_F16_TEXTURES', true); // Usar float16 (metade da memória)
+            tf.env().set('WEBGL_PACK', true); // Empacotar texturas
+            
+            console.log('🔧 Configurações WebGL otimizadas para memória');
+            console.log('   Backend:', tf.getBackend());
+            console.log('   Memória inicial:', tf.memory());
         }
         
         import { AudioProcessor } from './js/audio.js';
@@ -392,6 +414,16 @@
             selectedFilesContainer.classList.remove('hidden');
             addExamplesBtn.disabled = false;
             fileCount.textContent = selectedFiles.length;
+            
+            // Calcular total de amostras
+            const totalSamples = selectedFiles.reduce((acc, f) => acc + f.replicas, 0);
+            
+            // Avisar se ultrapassar limites recomendados
+            if (totalSamples > 150) {
+                showToast(`⚠️ AVISO: ${totalSamples} amostras podem causar erro de memória GPU! Recomendado: máximo 100-150 por vez.`, 'warning');
+            } else if (totalSamples > 100) {
+                showToast(`⚠️ ${totalSamples} amostras - perto do limite. Considere reduzir para evitar problemas.`, 'warning');
+            }
 
             filesList.innerHTML = selectedFiles.map((fileData, index) => `
                 <div class="file-item">
@@ -514,6 +546,11 @@
                 let totalProcessed = 0;
                 const totalToProcess = selectedFiles.reduce((acc, fileData) => acc + fileData.replicas, 0);
                 
+                // Avisar sobre grande quantidade de dados
+                if (totalToProcess > 100) {
+                    showToast(`⚠️ Processando ${totalToProcess} amostras - isso pode demorar...`, 'warning');
+                }
+                
                 for (let fileIndex = 0; fileIndex < selectedFiles.length; fileIndex++) {
                     const fileData = selectedFiles[fileIndex];
                     const file = fileData.file;
@@ -527,7 +564,11 @@
                         // Adicionar réplicas
                         for (let replica = 0; replica < fileData.replicas; replica++) {
                             totalProcessed++;
-                            showToast(`Processando réplica ${replica + 1}/${fileData.replicas} do arquivo ${file.name} (${totalProcessed}/${totalToProcess})`);
+                            
+                            // Atualizar UI a cada 10 amostras para evitar spam
+                            if (totalProcessed % 10 === 0 || replica === 0) {
+                                showToast(`Processando: ${totalProcessed}/${totalToProcess} (${Math.round(totalProcessed/totalToProcess*100)}%)`);
+                            }
                             
                             try {
                                 const tensor3D = await audioProcessor.processAudioForTraining(audioBuffer);
@@ -535,6 +576,13 @@
                                 // Adicionar ao dataset
                                 trainer.addTrainingExample(tensor3D, speciesName);
                                 successCount++;
+                                
+                                // Liberar memória GPU a cada 20 amostras
+                                if (totalProcessed % 20 === 0) {
+                                    await tf.nextFrame();
+                                    const memInfo = tf.memory();
+                                    console.log(`💾 GPU: ${(memInfo.numBytes / 1024 / 1024).toFixed(2)} MB, ${memInfo.numTensors} tensores`);
+                                }
                                 
                             } catch (replicaError) {
                                 console.error(`Erro ao processar réplica ${replica + 1} de ${file.name}:`, replicaError);
@@ -610,7 +658,17 @@
 
             } catch (error) {
                 console.error('Erro no treinamento:', error);
-                showToast('Erro no treinamento: ' + error.message, 'error');
+                
+                // Detectar perda de contexto WebGL
+                if (error.message && error.message.includes('context')) {
+                    showToast('❌ Erro: Memória GPU esgotada! Reduza o número de amostras ou recarregue a página.', 'error');
+                    console.error('💥 CONTEXT_LOST: Muitos dados para a GPU. Sugestões:');
+                    console.error('   1. Reduza o número de réplicas por arquivo');
+                    console.error('   2. Processe menos arquivos de uma vez');
+                    console.error('   3. Recarregue a página e tente novamente');
+                } else {
+                    showToast('Erro no treinamento: ' + error.message, 'error');
+                }
             } finally {
                 trainModelBtn.disabled = false;
             }
@@ -780,19 +838,24 @@
             const toastMessage = document.getElementById('toastMessage');
             
             toastMessage.textContent = message;
-            toast.classList.remove('hidden', 'bg-gray-800', 'bg-red-600', 'bg-green-600');
+            toast.classList.remove('hidden', 'bg-gray-800', 'bg-red-600', 'bg-green-600', 'bg-yellow-600');
             
             if (type === 'error') {
                 toast.classList.add('bg-red-600');
             } else if (type === 'success') {
                 toast.classList.add('bg-green-600');
+            } else if (type === 'warning') {
+                toast.classList.add('bg-yellow-600');
             } else {
                 toast.classList.add('bg-gray-800');
             }
             
+            // Toasts de warning ficam mais tempo na tela
+            const duration = type === 'warning' ? 5000 : 3000;
+            
             setTimeout(() => {
                 toast.classList.add('hidden');
-            }, 3000);
+            }, duration);
         }
 
         // Carregar modelo ao iniciar

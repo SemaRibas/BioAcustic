@@ -20,6 +20,19 @@ export class BrowserTrainer {
         console.log(`✅ Exemplo adicionado: ${speciesName} (${this.trainingData.get(speciesName).length} amostras)`);
     }
     
+    // Limpar tensores não utilizados para liberar memória GPU
+    cleanupMemory() {
+        const numTensors = tf.memory().numTensors;
+        console.log(`🧹 Limpando memória GPU... (${numTensors} tensores ativos)`);
+        
+        // Forçar garbage collection do TensorFlow
+        tf.engine().startScope();
+        tf.engine().endScope();
+        
+        const afterCleanup = tf.memory().numTensors;
+        console.log(`✅ Memória limpa (${afterCleanup} tensores restantes)`);
+    }
+    
     getTrainingStats() {
         const stats = [];
         for (const [species, samples] of this.trainingData) {
@@ -56,20 +69,29 @@ export class BrowserTrainer {
             console.log(`   Shape detectado: [${inputShape.join(', ')}]`);
         }
         
-        // Modelo CNN simples e leve
+        // Modelo CNN otimizado para memória (menos parâmetros)
         const model = tf.sequential();
         
-        // Camada 1: Conv2D
+        // Camada 1: Conv2D (reduzido de 16 para 12 filtros)
         model.add(tf.layers.conv2d({
             inputShape: inputShape,
-            filters: 16,
+            filters: 12,
             kernelSize: 3,
             activation: 'relu',
             padding: 'same'
         }));
         model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
         
-        // Camada 2: Conv2D
+        // Camada 2: Conv2D (reduzido de 32 para 24 filtros)
+        model.add(tf.layers.conv2d({
+            filters: 24,
+            kernelSize: 3,
+            activation: 'relu',
+            padding: 'same'
+        }));
+        model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
+        
+        // Camada 3: Conv2D (reduzido de 64 para 32 filtros)
         model.add(tf.layers.conv2d({
             filters: 32,
             kernelSize: 3,
@@ -78,19 +100,10 @@ export class BrowserTrainer {
         }));
         model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
         
-        // Camada 3: Conv2D
-        model.add(tf.layers.conv2d({
-            filters: 64,
-            kernelSize: 3,
-            activation: 'relu',
-            padding: 'same'
-        }));
-        model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
-        
-        // Flatten e Dense
+        // Flatten e Dense (reduzido de 64 para 48 neurônios)
         model.add(tf.layers.flatten());
         model.add(tf.layers.dropout({ rate: 0.5 }));
-        model.add(tf.layers.dense({ units: 64, activation: 'relu' }));
+        model.add(tf.layers.dense({ units: 48, activation: 'relu' }));
         model.add(tf.layers.dropout({ rate: 0.3 }));
         model.add(tf.layers.dense({ units: numClasses, activation: 'softmax' }));
         
@@ -124,14 +137,17 @@ export class BrowserTrainer {
             }
         }
         
-        // Converter para tensores
-        const xs = tf.tensor4d(X);
-        const ys = tf.oneHot(tf.tensor1d(y, 'int32'), this.classNames.length);
-        
-        console.log(`✅ Dataset preparado: ${X.length} amostras`);
-        console.log(`   Shape: ${xs.shape}`);
-        
-        return { xs, ys };
+        // Converter para tensores usando tidy para gerenciamento automático de memória
+        return tf.tidy(() => {
+            const xs = tf.tensor4d(X);
+            const ys = tf.oneHot(tf.tensor1d(y, 'int32'), this.classNames.length);
+            
+            console.log(`✅ Dataset preparado: ${X.length} amostras`);
+            console.log(`   Shape: ${xs.shape}`);
+            console.log(`   Memória GPU: ${(tf.memory().numBytes / 1024 / 1024).toFixed(2)} MB`);
+            
+            return { xs, ys };
+        });
     }
     
     async train(epochs = 20, batchSize = 8, onEpochEnd = null) {
@@ -147,22 +163,41 @@ export class BrowserTrainer {
                 await this.buildModel();
             }
             
+            // Limpar memória antes de preparar dados
+            this.cleanupMemory();
+            
             // Preparar dados
             const { xs, ys } = this.prepareDataset();
             
             console.log('🎓 Iniciando treinamento...');
             console.log(`   Épocas: ${epochs}`);
             console.log(`   Batch size: ${batchSize}`);
+            console.log(`   Total amostras: ${xs.shape[0]}`);
             
-            // Treinar
+            // Ajustar batch size baseado no número de amostras para evitar sobrecarga
+            const totalSamples = xs.shape[0];
+            const adjustedBatchSize = Math.min(batchSize, Math.floor(totalSamples / 4));
+            
+            if (adjustedBatchSize !== batchSize) {
+                console.log(`   ⚠️ Batch size ajustado: ${batchSize} → ${adjustedBatchSize}`);
+            }
+            
+            // Treinar com gerenciamento de memória melhorado
             const history = await this.model.fit(xs, ys, {
                 epochs: epochs,
-                batchSize: batchSize,
+                batchSize: adjustedBatchSize,
                 validationSplit: 0.2,
                 shuffle: true,
                 callbacks: {
-                    onEpochEnd: (epoch, logs) => {
+                    onEpochEnd: async (epoch, logs) => {
                         console.log(`   Época ${epoch + 1}/${epochs} - loss: ${logs.loss.toFixed(4)} - acc: ${logs.acc.toFixed(4)}`);
+                        
+                        // Liberar memória GPU periodicamente
+                        if ((epoch + 1) % 5 === 0) {
+                            await tf.nextFrame(); // Permitir que a GPU respire
+                            const memInfo = tf.memory();
+                            console.log(`   💾 GPU: ${(memInfo.numBytes / 1024 / 1024).toFixed(2)} MB, ${memInfo.numTensors} tensores`);
+                        }
                         
                         if (onEpochEnd) {
                             onEpochEnd(epoch, logs);
@@ -175,6 +210,9 @@ export class BrowserTrainer {
             xs.dispose();
             ys.dispose();
             
+            // Limpeza final
+            this.cleanupMemory();
+            
             console.log('✅ Treinamento concluído!');
             
             this.isTraining = false;
@@ -182,6 +220,15 @@ export class BrowserTrainer {
             
         } catch (error) {
             this.isTraining = false;
+            console.error('❌ Erro no treinamento:', error);
+            
+            // Tentar recuperar memória em caso de erro
+            try {
+                this.cleanupMemory();
+            } catch (cleanupError) {
+                console.warn('⚠️ Erro ao limpar memória:', cleanupError);
+            }
+            
             throw error;
         }
     }
