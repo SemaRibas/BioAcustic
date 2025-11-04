@@ -303,6 +303,9 @@
                             <button id="saveModelBtn" class="btn btn-primary" style="width: 100%;" disabled>
                                 💾 Salvar Modelo
                             </button>
+                            <button id="testModelBtn" class="btn btn-secondary" style="width: 100%;" disabled>
+                                🧪 Testar Modelo
+                            </button>
                             <button id="deleteModelBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #ef4444, #dc2626); color: white;">
                                 🗑️ Limpar Modelo
                             </button>
@@ -394,6 +397,7 @@
         const trainModelBtn = document.getElementById('trainModelBtn');
         const trainingPanel = document.getElementById('trainingPanel');
         const saveModelBtn = document.getElementById('saveModelBtn');
+        const testModelBtn = document.getElementById('testModelBtn');
         const deleteModelBtn = document.getElementById('deleteModelBtn');
         const clearDataBtn = document.getElementById('clearDataBtn');
         const exportDataBtn = document.getElementById('exportDataBtn');
@@ -654,6 +658,16 @@
 
                 showToast('✅ Treinamento concluído!', 'success');
                 saveModelBtn.disabled = false;
+                
+                // Salvar automaticamente após treinamento
+                try {
+                    await trainer.saveModel();
+                    showToast('💾 Modelo salvo automaticamente!', 'success');
+                } catch (saveError) {
+                    console.error('Erro ao salvar modelo:', saveError);
+                    showToast('⚠️ Modelo treinado mas não foi possível salvar. Use o botão "Salvar Modelo".', 'warning');
+                }
+                
                 updateModelInfo();
 
             } catch (error) {
@@ -685,11 +699,20 @@
             }
         });
 
+        // Testar modelo
+        testModelBtn.addEventListener('click', () => {
+            showToast('🚀 Abrindo página principal para testar...', 'success');
+            setTimeout(() => {
+                window.open('index.html', '_blank');
+            }, 500);
+        });
+
         // Deletar modelo
         deleteModelBtn.addEventListener('click', async () => {
             if (confirm('Tem certeza que deseja deletar o modelo treinado?')) {
                 await trainer.deleteModel();
                 saveModelBtn.disabled = true;
+                testModelBtn.disabled = true;
                 updateModelInfo();
                 showToast('Modelo deletado', 'success');
             }
@@ -800,34 +823,57 @@
         }
 
         async function updateModelInfo() {
-            const metadata = await trainer.loadModel();
-            
-            if (metadata) {
-                modelInfo.innerHTML = `
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Classes:</span>
-                            <span class="font-semibold">${metadata.numClasses}</span>
+            try {
+                const metadata = await trainer.loadModel();
+                
+                if (metadata) {
+                    console.log('✅ Modelo salvo encontrado:', metadata);
+                    
+                    modelInfo.innerHTML = `
+                        <div style="background: linear-gradient(135deg, #d1fae5, #a7f3d0); padding: var(--space-md); border-radius: var(--radius-lg); margin-bottom: var(--space-sm);">
+                            <p style="font-weight: 700; color: #065f46; margin-bottom: var(--space-xs);">✅ Modelo Carregado</p>
+                            <p style="font-size: 0.75rem; color: #047857;">Pronto para uso na página principal</p>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Treinado em:</span>
-                            <span class="font-semibold">${new Date(metadata.trainedAt).toLocaleString('pt-BR')}</span>
-                        </div>
-                        <div class="mt-2 pt-2 border-t">
-                            <p class="text-xs text-gray-600 mb-1">Espécies:</p>
-                            <div class="flex flex-wrap gap-1">
-                                ${metadata.classNames.map(name => 
-                                    `<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">${name}</span>`
-                                ).join('')}
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Classes:</span>
+                                <span class="font-semibold">${metadata.numClasses}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Treinado em:</span>
+                                <span class="font-semibold">${new Date(metadata.trainedAt).toLocaleString('pt-BR')}</span>
+                            </div>
+                            <div class="mt-2 pt-2 border-t">
+                                <p class="text-xs text-gray-600 mb-1">Espécies:</p>
+                                <div class="flex flex-wrap gap-1">
+                                    ${metadata.classNames.map(name => 
+                                        `<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">${name}</span>`
+                                    ).join('')}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-                saveModelBtn.disabled = false;
-            } else {
+                    `;
+                    saveModelBtn.disabled = false;
+                    testModelBtn.disabled = false;
+                    
+                    // Mostrar toast de confirmação
+                    showToast('✅ Modelo encontrado e carregado!', 'success');
+                } else {
+                    console.log('ℹ️ Nenhum modelo salvo encontrado');
+                    
+                    modelInfo.innerHTML = `
+                        <div class="text-center text-gray-500 py-4">
+                            <p class="text-sm">Nenhum modelo salvo</p>
+                            <p style="font-size: 0.75rem; color: var(--gray-400); margin-top: var(--space-xs);">Treine um modelo primeiro</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar modelo:', error);
                 modelInfo.innerHTML = `
-                    <div class="text-center text-gray-500 py-4">
-                        <p class="text-sm">Nenhum modelo treinado</p>
+                    <div class="text-center text-red-500 py-4">
+                        <p class="text-sm">⚠️ Erro ao carregar modelo</p>
+                        <p style="font-size: 0.75rem; margin-top: var(--space-xs);">${error.message}</p>
                     </div>
                 `;
             }
