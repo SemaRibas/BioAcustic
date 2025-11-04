@@ -690,6 +690,9 @@
                 uiManager.showNotification('✅ Treinamento concluído!', 'success');
                 saveModelBtn.disabled = false;
                 
+                // Aguardar um momento para garantir estabilidade antes de salvar
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 // Salvar automaticamente após treinamento
                 try {
                     await trainer.saveModel();

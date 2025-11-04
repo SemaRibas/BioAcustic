@@ -184,15 +184,24 @@ export class BrowserTrainer {
             
             console.log('🎓 Iniciando treinamento...');
             console.log(`   📊 Configurações:`);
-            console.log(`      • Épocas máximas: ${epochs}`);
+            console.log(`      • Épocas: ${epochs} (todas serão executadas)`);
             console.log(`      • Tamanho do lote: ${batchSize}`);
             console.log(`      • Total de amostras: ${xs.shape[0]}`);
+            
+            if (xs.shape[0] < 50) {
+                console.log(`   `);
+                console.log(`   ⚠️  ATENÇÃO: Poucas amostras (${xs.shape[0]})!`);
+                console.log(`      • Recomendado: 50-100 amostras para melhor acurácia`);
+                console.log(`      • Use áudios DIFERENTES, não apenas réplicas`);
+                console.log(`      • Espere acurácia entre 60-80% com esses dados`);
+            }
+            
             console.log(`   `);
             console.log(`   💡 Sobre as métricas:`);
             console.log(`      • ERRO (Loss): Quanto menor, melhor! Indica o erro do modelo.`);
             console.log(`      • ACURÁCIA: % de previsões corretas. Meta: > 85%`);
-            console.log(`      • Treinamento: Aprende com 80% dos dados`);
-            console.log(`      • Validação: Testa com 20% dos dados (não usados no treino)`);
+            console.log(`      • Treinamento: Aprende com os dados de treino`);
+            console.log(`      • Validação: Testa generalização (não usado no treino)`);
             console.log(`   `);
             
             // Ajustar batch size baseado no número de amostras para evitar sobrecarga
@@ -207,13 +216,17 @@ export class BrowserTrainer {
             let bestValAcc = 0;
             let bestWeights = null;
             let patienceCounter = 0;
-            const patience = 15; // Parar se não melhorar por 15 épocas
+            const patience = 100; // Desabilitado na prática (deixa todas as épocas rodarem)
             
-            // Treinar com gerenciamento de memória melhorado e early stopping
+            // Com poucas amostras, usar validação menor
+            const validationSplit = totalSamples < 100 ? 0.15 : 0.2;
+            console.log(`   ⚙️  Validação: ${(validationSplit * 100).toFixed(0)}% dos dados`);
+            
+            // Treinar com gerenciamento de memória melhorado
             const history = await this.model.fit(xs, ys, {
                 epochs: epochs,
                 batchSize: adjustedBatchSize,
-                validationSplit: 0.2,
+                validationSplit: validationSplit,
                 shuffle: true,
                 callbacks: {
                     onEpochBegin: async (epoch) => {
@@ -239,8 +252,8 @@ export class BrowserTrainer {
                         console.log(`      Treinamento - Erro: ${logs.loss.toFixed(4)}, Acurácia: ${(trainAcc * 100).toFixed(2)}%`);
                         console.log(`      Validação   - Erro: ${logs.val_loss.toFixed(4)}, Acurácia: ${(valAcc * 100).toFixed(2)}%`);
                         
-                        // Early stopping: salvar melhor modelo
-                        if (valAcc > bestValAcc) {
+                        // Early stopping: salvar melhor modelo (apenas se tiver melhoria real)
+                        if (valAcc > bestValAcc && valAcc > 0.1) { // Ignorar validação zerada
                             bestValAcc = valAcc;
                             // Limpar pesos anteriores se existirem
                             if (bestWeights) {
@@ -250,9 +263,16 @@ export class BrowserTrainer {
                             patienceCounter = 0;
                             console.log(`      ✅ Melhor modelo até agora! Acurácia Validação: ${(valAcc * 100).toFixed(2)}%`);
                         } else {
-                            patienceCounter++;
-                            console.log(`      ⏳ Sem melhoria há ${patienceCounter} épocas`);
-                            if (patienceCounter >= patience) {
+                            // Não contar como "sem melhoria" se validação está zerada
+                            if (valAcc > 0.1) {
+                                patienceCounter++;
+                                console.log(`      ⏳ Sem melhoria há ${patienceCounter} épocas`);
+                            } else {
+                                console.log(`      ⚠️ Validação zerada - modelo ainda aprendendo...`);
+                            }
+                            
+                            // Early stopping desabilitado para poucas amostras
+                            if (patienceCounter >= patience && totalSamples >= 100) {
                                 console.log(`      🛑 Treinamento interrompido! Sem melhoria por ${patience} épocas consecutivas`);
                                 this.model.stopTraining = true;
                             }
@@ -281,16 +301,16 @@ export class BrowserTrainer {
             if (bestWeights) {
                 console.log(`🏆 Restaurando melhor modelo (Acurácia Validação: ${(bestValAcc * 100).toFixed(2)}%)`);
                 await this.model.setWeights(bestWeights);
-                // Limpar pesos antigos
-                bestWeights.forEach(w => w.dispose());
+                // NÃO limpar bestWeights - eles são referências aos pesos do modelo
+                // bestWeights.forEach(w => w.dispose()); // REMOVIDO - causava erro ao salvar
             }
             
-            // Limpar tensores
+            // Limpar apenas os tensores de dados (não afeta o modelo)
             xs.dispose();
             ys.dispose();
             
-            // Limpeza final
-            this.cleanupMemory();
+            // Limpeza suave (não afeta pesos do modelo)
+            await tf.nextFrame();
             
             console.log('✅ Treinamento concluído!');
             
@@ -334,22 +354,35 @@ export class BrowserTrainer {
         
         console.log('💾 Salvando modelo...');
         
-        // Salvar no IndexedDB do navegador
-        await this.model.save(`indexeddb://${modelName}`);
-        
-        // Salvar metadados
-        const metadata = {
-            classNames: this.classNames,
-            numClasses: this.classNames.length,
-            trainedAt: new Date().toISOString(),
-            samplesPerClass: Object.fromEntries(
-                Array.from(this.trainingData.entries()).map(([k, v]) => [k, v.length])
-            )
-        };
-        
-        localStorage.setItem(`${modelName}-metadata`, JSON.stringify(metadata));
-        
-        console.log('✅ Modelo salvo no navegador');
+        try {
+            // Verificar se o modelo está válido (pesos não foram descartados)
+            const weights = this.model.getWeights();
+            if (weights.length === 0) {
+                throw new Error('Modelo inválido: sem pesos para salvar');
+            }
+            
+            // Salvar no IndexedDB do navegador
+            await this.model.save(`indexeddb://${modelName}`);
+            
+            console.log(`✅ Modelo salvo com sucesso: ${modelName}`);
+            
+            // Salvar metadados
+            const metadata = {
+                classNames: this.classNames,
+                numClasses: this.classNames.length,
+                trainedAt: new Date().toISOString(),
+                samplesPerClass: Object.fromEntries(
+                    Array.from(this.trainingData.entries()).map(([k, v]) => [k, v.length])
+                )
+            };
+            
+            localStorage.setItem(`${modelName}-metadata`, JSON.stringify(metadata));
+            console.log('💾 Metadata salva no localStorage');
+            
+        } catch (error) {
+            console.error('❌ Erro ao salvar modelo:', error);
+            throw error;
+        }
     }
     
     async loadModel(modelName = 'bioacustic-browser-model') {
