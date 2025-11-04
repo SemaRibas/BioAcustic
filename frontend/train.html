@@ -83,22 +83,27 @@
         </div>
     </nav>
 
+    <!-- Hero Section -->
+    <section class="hero-gradient" style="padding: var(--space-3xl) 0;">
+        <div class="container text-center">
+            <h2 style="font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 800; color: white; margin-bottom: var(--space-md);">
+                🎓 Treinar Modelo Personalizado
+            </h2>
+            <p style="font-size: 1.125rem; color: rgba(255,255,255,0.95); max-width: 700px; margin: 0 auto var(--space-lg);">
+                Adicione suas próprias amostras de áudio para treinar um modelo específico para suas espécies
+            </p>
+        </div>
+    </section>
+
     <!-- Container Principal -->
-    <div class="container mx-auto px-4 py-8">
+    <main class="container" style="padding: var(--space-3xl) var(--space-xl);">
         <!-- Instruções -->
-        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg fade-in">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-blue-800">Como funciona o treinamento no navegador</h3>
-                    <div class="mt-2 text-sm text-blue-700">
-                        <ul class="list-disc list-inside space-y-1">
-                            <li>Faça upload de <strong>pelo menos 5 áudios</strong> para cada espécie</li>
-                            <li>Adicione <strong>pelo menos 2 espécies</strong> diferentes</li>
+        <div class="alert alert-info fade-in" style="margin-bottom: var(--space-xl);">
+            <div>
+                <h3 style="font-weight: 700; margin-bottom: var(--space-sm);">ℹ️ Como funciona o treinamento no navegador</h3>
+                <ul style="margin: 0; padding-left: var(--space-lg); list-style: disc;">
+                    <li>Faça upload de <strong>pelo menos 5 áudios</strong> para cada espécie</li>
+                    <li>Adicione <strong>pelo menos 2 espécies</strong> diferentes</li>
                             <li>O modelo será treinado diretamente no seu navegador</li>
                             <li>Após o treinamento, o modelo ficará salvo localmente</li>
                         </ul>
