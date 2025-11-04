@@ -60,6 +60,18 @@
             color: white;
             font-size: 1.25rem;
         }
+        
+        #dropZone.drag-over {
+            border-color: var(--accent-purple) !important;
+            background: #f3e8ff !important;
+            border-style: solid !important;
+        }
+        
+        @media (max-width: 1024px) {
+            .grid > div[style*="grid-column: span 2"] {
+                grid-column: span 1 !important;
+            }
+        }
     </style>
 </head>
 <body style="background: var(--gray-50); margin: 0; padding: 0;">
@@ -104,171 +116,177 @@
                 <ul style="margin: 0; padding-left: var(--space-lg); list-style: disc;">
                     <li>Faça upload de <strong>pelo menos 5 áudios</strong> para cada espécie</li>
                     <li>Adicione <strong>pelo menos 2 espécies</strong> diferentes</li>
-                            <li>O modelo será treinado diretamente no seu navegador</li>
-                            <li>Após o treinamento, o modelo ficará salvo localmente</li>
-                        </ul>
-                    </div>
-                </div>
+                    <li>O modelo será treinado diretamente no seu navegador</li>
+                    <li>Após o treinamento, o modelo ficará salvo localmente</li>
+                </ul>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-xl);">
             <!-- Painel de Upload -->
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">📤 Upload de Áudios</h2>
-                    
-                    <!-- Input de Espécie -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Nome da Espécie</label>
-                        <input 
-                            type="text" 
-                            id="speciesNameInput"
-                            placeholder="Ex: Boana faber, Scinax fuscomarginatus..."
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        >
-                        <p class="text-xs text-gray-500 mt-1">Digite o nome científico ou comum da espécie</p>
+            <div style="grid-column: span 2 / span 2;">
+                <section class="card fade-in">
+                    <div class="card-header">
+                        <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0;">📤 Upload de Áudios</h2>
                     </div>
-                    
-                    <!-- Upload de Arquivos -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Arquivos de Áudio</label>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-green-500 transition cursor-pointer" id="dropZone">
+                    <div class="card-body">
+                        <!-- Input de Espécie -->
+                        <div style="margin-bottom: var(--space-lg);">
+                            <label style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm);">
+                                🏷️ Nome da Espécie
+                            </label>
                             <input 
-                                type="file" 
-                                id="audioFiles" 
-                                accept="audio/*" 
-                                multiple 
-                                class="hidden"
+                                type="text" 
+                                id="speciesNameInput"
+                                placeholder="Ex: Boana faber, Scinax fuscomarginatus..."
+                                class="input"
                             >
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            <p class="mt-2 text-sm text-gray-600">Arraste arquivos aqui ou clique para selecionar</p>
-                            <p class="text-xs text-gray-500">WAV, MP3, OGG, FLAC</p>
+                            <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: var(--space-xs);">
+                                Digite o nome científico ou comum da espécie
+                            </p>
                         </div>
+                        
+                        <!-- Upload de Arquivos -->
+                        <div style="margin-bottom: var(--space-lg);">
+                            <label style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm);">
+                                📁 Arquivos de Áudio
+                            </label>
+                            <div class="upload-zone-training" id="dropZone">
+                                <input type="file" id="audioFiles" accept="audio/*" multiple style="display: none;">
+                                <div style="font-size: 3rem; margin-bottom: var(--space-md);">🎵</div>
+                                <p style="font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-xs);">
+                                    Arraste arquivos ou clique para selecionar
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--gray-500);">
+                                    WAV, MP3, OGG, FLAC
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <button id="addExamplesBtn" class="btn btn-primary btn-lg" style="width: 100%;">
+                            ➕ Adicionar Exemplos
+                        </button>
                     </div>
-                    
-                    <button 
-                        id="addExamplesBtn"
-                        class="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                        ➕ Adicionar Exemplos
-                    </button>
-                </div>
+                </section>
 
                 <!-- Progresso do Treinamento -->
-                <div id="trainingPanel" class="bg-white rounded-xl shadow-lg p-6 mt-6 hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">🎓 Treinamento em Progresso</h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-700">Época <span id="currentEpoch">0</span>/<span id="totalEpochs">20</span></span>
-                                <span class="text-gray-700" id="epochProgress">0%</span>
+                <section id="trainingPanel" class="card hidden" style="margin-top: var(--space-xl);">
+                    <div class="card-header">
+                        <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0;">⚡ Treinamento em Progresso</h2>
+                    </div>
+                    <div class="card-body">
+                        <div style="margin-bottom: var(--space-lg);">
+                            <div class="flex items-center justify-between" style="margin-bottom: var(--space-sm);">
+                                <span style="font-size: 0.875rem; font-weight: 600; color: var(--gray-700);">
+                                    Época <span id="currentEpoch">0</span>/<span id="totalEpochs">20</span>
+                                </span>
+                                <span style="font-size: 0.875rem; font-weight: 600; color: var(--accent-purple);" id="epochProgress">0%</span>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-4">
-                                <div id="progressBar" class="training-progress bg-green-500 h-4 rounded-full" style="width: 0%"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-blue-50 p-3 rounded-lg">
-                                <p class="text-xs text-gray-600">Loss</p>
-                                <p class="text-xl font-bold text-blue-600" id="currentLoss">-</p>
-                            </div>
-                            <div class="bg-green-50 p-3 rounded-lg">
-                                <p class="text-xs text-gray-600">Acurácia</p>
-                                <p class="text-xl font-bold text-green-600" id="currentAccuracy">-</p>
+                            <div class="progress">
+                                <div id="progressBar" class="progress-bar" style="width: 0%; background: linear-gradient(90deg, var(--accent-purple), #c084fc);"></div>
                             </div>
                         </div>
                         
-                        <div id="trainingLog" class="bg-gray-50 p-3 rounded-lg h-32 overflow-y-auto text-xs font-mono text-gray-700">
+                        <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: var(--space-md); margin-bottom: var(--space-lg);">
+                            <div style="background: var(--secondary-50); padding: var(--space-md); border-radius: var(--radius-lg);">
+                                <p style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: var(--space-xs);">Loss</p>
+                                <p style="font-size: 1.5rem; font-weight: 700; color: var(--secondary-600);" id="currentLoss">-</p>
+                            </div>
+                            <div style="background: var(--primary-50); padding: var(--space-md); border-radius: var(--radius-lg);">
+                                <p style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: var(--space-xs);">Acurácia</p>
+                                <p style="font-size: 1.5rem; font-weight: 700; color: var(--primary-600);" id="currentAccuracy">-</p>
+                            </div>
+                        </div>
+                        
+                        <div id="trainingLog" style="background: var(--gray-900); color: #10b981; padding: var(--space-md); border-radius: var(--radius-lg); height: 128px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.75rem;">
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
 
             <!-- Painel Lateral -->
-            <div class="space-y-6">
+            <div style="display: flex; flex-direction: column; gap: var(--space-xl);">
                 <!-- Estatísticas -->
-                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">📊 Dataset</h3>
-                    <div id="datasetStats" class="space-y-3">
-                        <div class="text-center text-gray-500 py-8">
-                            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                            </svg>
-                            <p class="mt-2 text-sm">Nenhuma amostra ainda</p>
+                <section class="card fade-in">
+                    <div class="card-header">
+                        <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;">📊 Dataset</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="datasetStats">
+                            <div style="text-align: center; color: var(--gray-500); padding: var(--space-xl) 0;">
+                                <div style="font-size: 3rem; margin-bottom: var(--space-sm);">📂</div>
+                                <p style="font-size: 0.875rem;">Nenhuma amostra ainda</p>
+                            </div>
+                        </div>
+                        
+                        <div id="trainBtnContainer" class="hidden" style="margin-top: var(--space-md);">
+                            <button id="trainModelBtn" class="btn btn-primary" style="width: 100%;">
+                                🎓 Treinar Modelo
+                            </button>
                         </div>
                     </div>
-                    
-                    <div id="trainBtnContainer" class="mt-4 hidden">
-                        <button 
-                            id="trainModelBtn"
-                            class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-semibold disabled:bg-gray-300"
-                        >
-                            🎓 Treinar Modelo
-                        </button>
-                    </div>
-                </div>
+                </section>
 
                 <!-- Modelo Atual -->
-                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">🧠 Modelo Atual</h3>
-                    <div id="modelInfo">
-                        <div class="text-center text-gray-500 py-4">
-                            <p class="text-sm">Nenhum modelo treinado</p>
+                <section class="card fade-in">
+                    <div class="card-header">
+                        <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;">🧠 Modelo Atual</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="modelInfo">
+                            <div style="text-align: center; color: var(--gray-500); padding: var(--space-md) 0;">
+                                <p style="font-size: 0.875rem;">Nenhum modelo treinado</p>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: var(--space-md); display: flex; flex-direction: column; gap: var(--space-sm);">
+                            <button id="saveModelBtn" class="btn btn-primary" style="width: 100%;" disabled>
+                                💾 Salvar Modelo
+                            </button>
+                            <button id="deleteModelBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #ef4444, #dc2626); color: white;">
+                                🗑️ Limpar Modelo
+                            </button>
                         </div>
                     </div>
-                    
-                    <div class="mt-4 space-y-2">
-                        <button 
-                            id="saveModelBtn"
-                            class="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold disabled:bg-gray-300"
-                            disabled
-                        >
-                            💾 Salvar Modelo
-                        </button>
-                        <button 
-                            id="deleteModelBtn"
-                            class="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-semibold"
-                        >
-                            🗑️ Limpar Modelo
-                        </button>
-                    </div>
-                </div>
+                </section>
 
                 <!-- Ações -->
-                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">⚙️ Ações</h3>
-                    <div class="space-y-2">
-                        <button 
-                            id="clearDataBtn"
-                            class="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
-                        >
-                            🧹 Limpar Dados
-                        </button>
-                        <button 
-                            id="exportDataBtn"
-                            class="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
-                        >
-                            📦 Exportar Dataset
-                        </button>
-                        <button 
-                            id="importDataBtn"
-                            class="w-full px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition"
-                        >
-                            📥 Importar Dataset
-                        </button>
+                <section class="card fade-in">
+                    <div class="card-header">
+                        <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;">⚙️ Ações</h3>
                     </div>
-                </div>
+                    <div class="card-body">
+                        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+                            <button id="clearDataBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+                                🧹 Limpar Dados
+                            </button>
+                            <button id="exportDataBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
+                                📦 Exportar Dataset
+                            </button>
+                            <button id="importDataBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white;">
+                                📥 Importar Dataset
+                            </button>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
-    </div>
+    </main>
+
+    <!-- Footer -->
+    <footer style="background: var(--gray-900); color: white; padding: var(--space-2xl) 0; margin-top: var(--space-3xl);">
+        <div class="container text-center">
+            <p style="font-size: 0.875rem; margin-bottom: var(--space-sm);">
+                🧬 Desenvolvido com TensorFlow.js e Deep Learning
+            </p>
+            <p style="font-size: 0.75rem; color: var(--gray-400);">
+                Projeto BioAcustic © 2025 | Para fins educacionais e científicos
+            </p>
+        </div>
+    </footer>
 
     <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg hidden">
+    <div id="toast" class="toast hidden">
         <p id="toastMessage"></p>
     </div>
 
