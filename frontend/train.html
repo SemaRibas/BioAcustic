@@ -17,7 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <style>
         .hero-gradient {
-            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
+            background: linear-gradient(135deg, var(--accent-purple) 0%, #6366f1 50%, var(--secondary-500) 100%);
         }
         
         .nav-header {
@@ -46,7 +46,7 @@
         
         .upload-zone-training:hover {
             border-color: var(--accent-purple);
-            background: #faf5ff;
+            background: #faf5ff; /* Roxo-claro */
         }
         
         .icon-badge {
@@ -55,7 +55,8 @@
             justify-content: center;
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-400));
+            /* Usando um gradiente roxo para combinar com a página */
+            background: linear-gradient(135deg, var(--accent-purple), #a78bfa);
             border-radius: var(--radius-lg);
             color: white;
             font-size: 1.25rem;
@@ -81,7 +82,7 @@
         
         .file-item:hover {
             box-shadow: var(--shadow-sm);
-            border-color: var(--primary-300);
+            border-color: var(--accent-purple);
         }
         
         .replicate-input {
@@ -99,6 +100,11 @@
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
         
+        /* Adicionando sombra ao texto do header para melhor legibilidade */
+        .header-text-shadow {
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
         @media (max-width: 1024px) {
             .grid > div[style*="grid-column: span 2"] {
                 grid-column: span 1 !important;
@@ -112,7 +118,7 @@
         <div class="container">
             <div class="flex items-center justify-between" style="padding: var(--space-lg) 0;">
                 <div class="flex items-center gap-md">
-                    <div class="icon-badge">🐸</div>
+                    <div class="icon-badge">🎓</div>
                     <div>
                         <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--gray-900); margin: 0;">BioAcustic</h1>
                         <p style="font-size: 0.75rem; color: var(--gray-600); margin: 0;">Treinamento de Modelo</p>
@@ -130,10 +136,10 @@
     <!-- Hero Section -->
     <section class="hero-gradient" style="padding: var(--space-3xl) 0;">
         <div class="container text-center">
-            <h2 style="font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 800; color: white; margin-bottom: var(--space-md);">
+            <h2 style="font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 800; color: white; margin-bottom: var(--space-md);" class="header-text-shadow">
                 🎓 Treinar Modelo Personalizado
             </h2>
-            <p style="font-size: 1.125rem; color: rgba(255,255,255,0.95); max-width: 700px; margin: 0 auto var(--space-lg);">
+            <p style="font-size: 1.125rem; color: rgba(255,255,255,0.95); max-width: 700px; margin: 0 auto var(--space-lg);" class="header-text-shadow">
                 Adicione suas próprias amostras de áudio para treinar um modelo específico para suas espécies
             </p>
         </div>
@@ -155,10 +161,10 @@
         </div>
         
         <!-- Aviso sobre limites -->
-        <div class="alert" style="margin-bottom: var(--space-xl); background: linear-gradient(135deg, #fef3c7, #fde68a); border-left: 4px solid #f59e0b;">
+        <div class="alert alert-warning" style="margin-bottom: var(--space-xl);">
             <div>
-                <h3 style="font-weight: 700; margin-bottom: var(--space-sm); color: #92400e;">⚠️ IMPORTANTE: Limites de Memória GPU</h3>
-                <ul style="margin: 0; padding-left: var(--space-lg); list-style: disc; color: #78350f;">
+                <h3 style="font-weight: 700; margin-bottom: var(--space-sm);">⚠️ IMPORTANTE: Limites de Memória GPU</h3>
+                <ul style="margin: 0; padding-left: var(--space-lg); list-style: disc;">
                     <li><strong>Máximo recomendado: 100-150 amostras totais</strong> (todas espécies somadas)</li>
                     <li>Exemplo: 5 espécies × 20 amostras = 100 amostras ✅</li>
                     <li>Ultrapassar esse limite pode causar erro de memória GPU e travar o navegador</li>
@@ -177,7 +183,7 @@
                     <div class="card-body">
                         <!-- Input de Espécie -->
                         <div style="margin-bottom: var(--space-lg);">
-                            <label style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm);">
+                            <label for="speciesNameInput" style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm);">
                                 🏷️ Nome da Espécie
                             </label>
                             <input 
@@ -193,7 +199,7 @@
                         
                         <!-- Upload de Arquivos -->
                         <div style="margin-bottom: var(--space-lg);">
-                            <label style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm);">
+                            <label for="audioFiles" style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm);">
                                 📁 Arquivos de Áudio (Seleção Múltipla)
                             </label>
                             <div class="upload-zone-training" id="dropZone">
@@ -218,7 +224,7 @@
                                     🗑️ Limpar
                                 </button>
                             </div>
-                            <div id="filesList" style="max-height: 300px; overflow-y: auto; background: var(--gray-50); border-radius: var(--radius-lg); padding: var(--space-md);">
+                            <div id="filesList" style="max-height: 300px; overflow-y: auto; background: var(--gray-50); border-radius: var(--radius-lg); padding: var(--space-md); border: 1px solid var(--gray-200);">
                                 <!-- Arquivos serão listados aqui -->
                             </div>
                         </div>
@@ -248,17 +254,17 @@
                         </div>
                         
                         <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: var(--space-md); margin-bottom: var(--space-lg);">
-                            <div style="background: var(--secondary-50); padding: var(--space-md); border-radius: var(--radius-lg);">
+                            <div style="background: var(--secondary-50); padding: var(--space-md); border-radius: var(--radius-lg); border: 1px solid var(--secondary-100)">
                                 <p style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: var(--space-xs);">Loss</p>
                                 <p style="font-size: 1.5rem; font-weight: 700; color: var(--secondary-600);" id="currentLoss">-</p>
                             </div>
-                            <div style="background: var(--primary-50); padding: var(--space-md); border-radius: var(--radius-lg);">
+                            <div style="background: var(--primary-50); padding: var(--space-md); border-radius: var(--radius-lg); border: 1px solid var(--primary-100)">
                                 <p style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: var(--space-xs);">Acurácia</p>
                                 <p style="font-size: 1.5rem; font-weight: 700; color: var(--primary-600);" id="currentAccuracy">-</p>
                             </div>
                         </div>
                         
-                        <div id="trainingLog" style="background: var(--gray-900); color: #10b981; padding: var(--space-md); border-radius: var(--radius-lg); height: 128px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.75rem;">
+                        <div id="trainingLog" style="background: var(--gray-900); color: #10b981; padding: var(--space-md); border-radius: var(--radius-lg); height: 128px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.75rem; border: 1px solid var(--gray-700);">
                         </div>
                     </div>
                 </section>
@@ -323,10 +329,10 @@
                             <button id="clearDataBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
                                 🧹 Limpar Dados
                             </button>
-                            <button id="exportDataBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
+                            <button id="exportDataBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, var(--accent-purple), #7c3aed); color: white;">
                                 📦 Exportar Dataset
                             </button>
-                            <button id="importDataBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white;">
+                            <button id="importDataBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, var(--secondary-500), #4f46e5); color: white;">
                                 📥 Importar Dataset
                             </button>
                         </div>
@@ -348,10 +354,7 @@
         </div>
     </footer>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast hidden">
-        <p id="toastMessage"></p>
-    </div>
+    <!-- O container de notificação será injetado aqui pelo ui.js -->
 
     <!-- Scripts -->
     <script type="module">
@@ -372,16 +375,23 @@
             console.log('   Memória inicial:', tf.memory());
         }
         
+        // Importando os módulos
         import { AudioProcessor } from './js/audio.js';
         import { BrowserTrainer } from './js/trainer.js';
+        // IMPORTADO: UIManager para notificações unificadas
+        import { UIManager } from './js/ui.js';
 
         // Inicializar
         const audioProcessor = new AudioProcessor();
         const trainer = new BrowserTrainer();
+        // INICIALIZADO: UIManager
+        const uiManager = new UIManager();
+        
         let uploadedFiles = [];
         
         console.log('✅ AudioProcessor inicializado');
         console.log('✅ BrowserTrainer inicializado');
+        console.log('✅ UIManager inicializado');
 
         // Elementos DOM
         const speciesNameInput = document.getElementById('speciesNameInput');
@@ -424,9 +434,11 @@
             
             // Avisar se ultrapassar limites recomendados
             if (totalSamples > 150) {
-                showToast(`⚠️ AVISO: ${totalSamples} amostras podem causar erro de memória GPU! Recomendado: máximo 100-150 por vez.`, 'warning');
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification(`⚠️ AVISO: ${totalSamples} amostras podem causar erro de memória GPU! Recomendado: máximo 100-150 por vez.`, 'warning', 6000);
             } else if (totalSamples > 100) {
-                showToast(`⚠️ ${totalSamples} amostras - perto do limite. Considere reduzir para evitar problemas.`, 'warning');
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification(`⚠️ ${totalSamples} amostras - perto do limite. Considere reduzir para evitar problemas.`, 'warning', 6000);
             }
 
             filesList.innerHTML = selectedFiles.map((fileData, index) => `
@@ -531,12 +543,14 @@
             const speciesName = speciesNameInput.value.trim();
             
             if (!speciesName) {
-                showToast('Digite o nome da espécie!', 'error');
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification('Digite o nome da espécie!', 'error');
                 return;
             }
             
             if (selectedFiles.length === 0) {
-                showToast('Selecione arquivos de áudio!', 'error');
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification('Selecione arquivos de áudio!', 'error');
                 return;
             }
 
@@ -552,14 +566,16 @@
                 
                 // Avisar sobre grande quantidade de dados
                 if (totalToProcess > 100) {
-                    showToast(`⚠️ Processando ${totalToProcess} amostras - isso pode demorar...`, 'warning');
+                    // ATUALIZADO: Usando uiManager.showNotification
+                    uiManager.showNotification(`⚠️ Processando ${totalToProcess} amostras - isso pode demorar...`, 'warning');
                 }
                 
                 for (let fileIndex = 0; fileIndex < selectedFiles.length; fileIndex++) {
                     const fileData = selectedFiles[fileIndex];
                     const file = fileData.file;
                     
-                    showToast(`Processando arquivo ${fileIndex + 1}/${selectedFiles.length}: ${file.name}`);
+                    // ATUALIZADO: Usando uiManager.showNotification
+                    uiManager.showNotification(`Processando arquivo ${fileIndex + 1}/${selectedFiles.length}: ${file.name}`, 'info');
                     
                     try {
                         // Processar áudio uma vez
@@ -571,7 +587,8 @@
                             
                             // Atualizar UI a cada 10 amostras para evitar spam
                             if (totalProcessed % 10 === 0 || replica === 0) {
-                                showToast(`Processando: ${totalProcessed}/${totalToProcess} (${Math.round(totalProcessed/totalToProcess*100)}%)`);
+                                // ATUALIZADO: Usando uiManager.showNotification
+                                uiManager.showNotification(`Processando: ${totalProcessed}/${totalToProcess} (${Math.round(totalProcessed/totalToProcess*100)}%)`, 'info');
                             }
                             
                             try {
@@ -591,19 +608,22 @@
                             } catch (replicaError) {
                                 console.error(`Erro ao processar réplica ${replica + 1} de ${file.name}:`, replicaError);
                                 errorCount++;
-                                showToast(`❌ Erro na réplica ${replica + 1} de ${file.name}`, 'error');
+                                // ATUALIZADO: Usando uiManager.showNotification
+                                uiManager.showNotification(`❌ Erro na réplica ${replica + 1} de ${file.name}`, 'error');
                             }
                         }
                         
                     } catch (fileError) {
                         console.error(`Erro ao carregar ${file.name}:`, fileError);
                         errorCount++;
-                        showToast(`❌ Erro ao carregar ${file.name}: ${fileError.message}`, 'error');
+                        // ATUALIZADO: Usando uiManager.showNotification
+                        uiManager.showNotification(`❌ Erro ao carregar ${file.name}: ${fileError.message}`, 'error');
                     }
                 }
 
                 if (successCount > 0) {
-                    showToast(`✅ ${successCount} exemplos adicionados para ${speciesName}`, 'success');
+                    // ATUALIZADO: Usando uiManager.showNotification
+                    uiManager.showNotification(`✅ ${successCount} exemplos adicionados para ${speciesName}`, 'success');
                     
                     // Limpar arquivos selecionados
                     selectedFiles = [];
@@ -615,12 +635,14 @@
                 }
                 
                 if (errorCount > 0) {
-                    showToast(`⚠️ ${errorCount} réplica(s) falharam`, 'error');
+                    // ATUALIZADO: Usando uiManager.showNotification
+                    uiManager.showNotification(`⚠️ ${errorCount} réplica(s) falharam`, 'error');
                 }
 
             } catch (error) {
                 console.error('Erro geral ao processar áudios:', error);
-                showToast('Erro ao processar áudios: ' + error.message, 'error');
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification('Erro ao processar áudios: ' + error.message, 'error');
             } finally {
                 addExamplesBtn.disabled = false;
                 addExamplesBtn.textContent = originalText;
@@ -630,7 +652,8 @@
         // Treinar modelo
         trainModelBtn.addEventListener('click', async () => {
             if (!trainer.canTrain()) {
-                showToast('Dados insuficientes! Mínimo: 2 espécies com 5 amostras cada.', 'error');
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification('Dados insuficientes! Mínimo: 2 espécies com 5 amostras cada.', 'error');
                 return;
             }
 
@@ -662,17 +685,20 @@
                     document.getElementById('trainingLog').textContent += logEntry + logTrain + logVal;
                     document.getElementById('trainingLog').scrollTop = document.getElementById('trainingLog').scrollHeight;
                 });
-
-                showToast('✅ Treinamento concluído!', 'success');
+                
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification('✅ Treinamento concluído!', 'success');
                 saveModelBtn.disabled = false;
                 
                 // Salvar automaticamente após treinamento
                 try {
                     await trainer.saveModel();
-                    showToast('💾 Modelo salvo automaticamente!', 'success');
+                    // ATUALIZADO: Usando uiManager.showNotification
+                    uiManager.showNotification('💾 Modelo salvo automaticamente!', 'success');
                 } catch (saveError) {
                     console.error('Erro ao salvar modelo:', saveError);
-                    showToast('⚠️ Modelo treinado mas não foi possível salvar. Use o botão "Salvar Modelo".', 'warning');
+                    // ATUALIZADO: Usando uiManager.showNotification
+                    uiManager.showNotification('⚠️ Modelo treinado mas não foi possível salvar. Use o botão "Salvar Modelo".', 'warning');
                 }
                 
                 updateModelInfo();
@@ -682,13 +708,15 @@
                 
                 // Detectar perda de contexto WebGL
                 if (error.message && error.message.includes('context')) {
-                    showToast('❌ Erro: Memória GPU esgotada! Reduza o número de amostras ou recarregue a página.', 'error');
+                    // ATUALIZADO: Usando uiManager.showNotification
+                    uiManager.showNotification('❌ Erro: Memória GPU esgotada! Reduza o número de amostras ou recarregue a página.', 'error');
                     console.error('💥 CONTEXT_LOST: Muitos dados para a GPU. Sugestões:');
                     console.error('   1. Reduza o número de réplicas por arquivo');
                     console.error('   2. Processe menos arquivos de uma vez');
                     console.error('   3. Recarregue a página e tente novamente');
                 } else {
-                    showToast('Erro no treinamento: ' + error.message, 'error');
+                    // ATUALIZADO: Usando uiManager.showNotification
+                    uiManager.showNotification('Erro no treinamento: ' + error.message, 'error');
                 }
             } finally {
                 trainModelBtn.disabled = false;
@@ -699,16 +727,19 @@
         saveModelBtn.addEventListener('click', async () => {
             try {
                 await trainer.saveModel();
-                showToast('✅ Modelo salvo no navegador!', 'success');
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification('✅ Modelo salvo no navegador!', 'success');
                 updateModelInfo();
             } catch (error) {
-                showToast('Erro ao salvar: ' + error.message, 'error');
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification('Erro ao salvar: ' + error.message, 'error');
             }
         });
 
         // Testar modelo
         testModelBtn.addEventListener('click', () => {
-            showToast('🚀 Abrindo página principal para testar...', 'success');
+            // ATUALIZADO: Usando uiManager.showNotification
+            uiManager.showNotification('🚀 Abrindo página principal para testar...', 'success');
             setTimeout(() => {
                 window.open('index.html', '_blank');
             }, 500);
@@ -721,7 +752,8 @@
                 saveModelBtn.disabled = true;
                 testModelBtn.disabled = true;
                 updateModelInfo();
-                showToast('Modelo deletado', 'success');
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification('Modelo deletado', 'success');
             }
         });
 
@@ -730,7 +762,8 @@
             if (confirm('Tem certeza que deseja limpar todos os dados de treinamento?')) {
                 trainer.clearTrainingData();
                 updateDatasetStats();
-                showToast('Dados limpos', 'success');
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification('Dados limpos', 'success');
             }
         });
 
@@ -743,7 +776,8 @@
             a.href = url;
             a.download = `bioacustic-dataset-${Date.now()}.json`;
             a.click();
-            showToast('Dataset exportado!', 'success');
+            // ATUALIZADO: Usando uiManager.showNotification
+            uiManager.showNotification('Dataset exportado!', 'success');
         });
 
         // Importar dataset
@@ -757,7 +791,8 @@
                 const data = JSON.parse(text);
                 trainer.importTrainingData(data);
                 updateDatasetStats();
-                showToast('Dataset importado!', 'success');
+                // ATUALIZADO: Usando uiManager.showNotification
+                uiManager.showNotification('Dataset importado!', 'success');
             };
             input.click();
         });
@@ -785,11 +820,9 @@
             
             if (stats.length === 0) {
                 datasetStats.innerHTML = `
-                    <div class="text-center text-gray-500 py-8">
-                        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                        </svg>
-                        <p class="mt-2 text-sm">Nenhuma amostra ainda</p>
+                    <div class="text-center" style="color: var(--gray-500); padding: var(--space-xl) 0;">
+                        <div style="font-size: 3rem; margin-bottom: var(--space-sm);">📂</div>
+                        <p style="font-size: 0.875rem;">Nenhuma amostra ainda</p>
                     </div>
                 `;
                 trainBtnContainer.classList.add('hidden');
@@ -799,21 +832,21 @@
             const totalSamples = stats.reduce((sum, s) => sum + s.count, 0);
             
             let html = `
-                <div class="bg-green-50 p-3 rounded-lg mb-3">
-                    <p class="text-sm text-gray-600">Total de Amostras</p>
-                    <p class="text-2xl font-bold text-green-600">${totalSamples}</p>
-                    <p class="text-xs text-gray-500">${stats.length} espécie(s)</p>
+                <div style="background: var(--primary-50); padding: var(--space-md); border-radius: var(--radius-lg); margin-bottom: var(--space-md); border: 1px solid var(--primary-100)">
+                    <p style="font-size: 0.75rem; color: var(--gray-600);">Total de Amostras</p>
+                    <p style="font-size: 1.5rem; font-weight: 700; color: var(--primary-600);">${totalSamples}</p>
+                    <p style="font-size: 0.75rem; color: var(--gray-500);">${stats.length} espécie(s)</p>
                 </div>
-                <div class="space-y-2">
+                <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
             `;
 
             for (const stat of stats) {
                 const isEnough = stat.count >= 5;
-                const color = isEnough ? 'green' : 'yellow';
+                const color = isEnough ? 'primary' : 'warning';
                 html += `
-                    <div class="flex justify-between items-center p-2 bg-${color}-50 rounded">
-                        <span class="text-sm font-medium text-gray-700 truncate">${stat.species}</span>
-                        <span class="text-sm font-bold text-${color}-600">${stat.count}</span>
+                    <div class="flex justify-between items-center" style="padding: var(--space-sm) var(--space-md); background: var(--${color}-50); border-radius: var(--radius-md); border: 1px solid var(--${color}-100)">
+                        <span class="text-sm font-semibold" style="color: var(--gray-700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${stat.species}</span>
+                        <span class="text-sm font-bold" style="color: var(--${color}-600);">${stat.count}</span>
                     </div>
                 `;
             }
@@ -837,24 +870,24 @@
                     console.log('✅ Modelo salvo encontrado:', metadata);
                     
                     modelInfo.innerHTML = `
-                        <div style="background: linear-gradient(135deg, #d1fae5, #a7f3d0); padding: var(--space-md); border-radius: var(--radius-lg); margin-bottom: var(--space-sm);">
-                            <p style="font-weight: 700; color: #065f46; margin-bottom: var(--space-xs);">✅ Modelo Carregado</p>
-                            <p style="font-size: 0.75rem; color: #047857;">Pronto para uso na página principal</p>
+                        <div style="background: linear-gradient(135deg, var(--primary-50), var(--primary-100)); padding: var(--space-md); border-radius: var(--radius-lg); margin-bottom: var(--space-sm); border: 1px solid var(--primary-200)">
+                            <p style="font-weight: 700; color: var(--primary-700); margin-bottom: var(--space-xs);">✅ Modelo Carregado</p>
+                            <p style="font-size: 0.75rem; color: var(--primary-600);">Pronto para uso na página principal</p>
                         </div>
-                        <div class="space-y-2 text-sm">
+                        <div style="display: flex; flex-direction: column; gap: var(--space-sm); font-size: 0.875rem;">
                             <div class="flex justify-between">
-                                <span class="text-gray-600">Classes:</span>
+                                <span style="color: var(--gray-600);">Classes:</span>
                                 <span class="font-semibold">${metadata.numClasses}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-600">Treinado em:</span>
+                                <span style="color: var(--gray-600);">Treinado em:</span>
                                 <span class="font-semibold">${new Date(metadata.trainedAt).toLocaleString('pt-BR')}</span>
                             </div>
-                            <div class="mt-2 pt-2 border-t">
-                                <p class="text-xs text-gray-600 mb-1">Espécies:</p>
-                                <div class="flex flex-wrap gap-1">
+                            <div style="margin-top: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--gray-200);">
+                                <p class="text-sm" style="color: var(--gray-600); margin-bottom: var(--space-xs);">Espécies:</p>
+                                <div class="flex" style="flex-wrap: wrap; gap: var(--space-xs);">
                                     ${metadata.classNames.map(name => 
-                                        `<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">${name}</span>`
+                                        `<span class="badge" style="background: var(--primary-100); color: var(--primary-800);">${name}</span>`
                                     ).join('')}
                                 </div>
                             </div>
@@ -863,13 +896,13 @@
                     saveModelBtn.disabled = false;
                     testModelBtn.disabled = false;
                     
-                    // Mostrar toast de confirmação
-                    showToast('✅ Modelo encontrado e carregado!', 'success');
+                    // ATUALIZADO: Usando uiManager.showNotification
+                    uiManager.showNotification('✅ Modelo encontrado e carregado!', 'success');
                 } else {
                     console.log('ℹ️ Nenhum modelo salvo encontrado');
                     
                     modelInfo.innerHTML = `
-                        <div class="text-center text-gray-500 py-4">
+                        <div class="text-center" style="color: var(--gray-500); padding: var(--space-md) 0;">
                             <p class="text-sm">Nenhum modelo salvo</p>
                             <p style="font-size: 0.75rem; color: var(--gray-400); margin-top: var(--space-xs);">Treine um modelo primeiro</p>
                         </div>
@@ -878,7 +911,7 @@
             } catch (error) {
                 console.error('❌ Erro ao carregar modelo:', error);
                 modelInfo.innerHTML = `
-                    <div class="text-center text-red-500 py-4">
+                    <div class="text-center" style="color: var(--error); padding: var(--space-md) 0;">
                         <p class="text-sm">⚠️ Erro ao carregar modelo</p>
                         <p style="font-size: 0.75rem; margin-top: var(--space-xs);">${error.message}</p>
                     </div>
@@ -886,30 +919,7 @@
             }
         }
 
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
-            
-            toastMessage.textContent = message;
-            toast.classList.remove('hidden', 'bg-gray-800', 'bg-red-600', 'bg-green-600', 'bg-yellow-600');
-            
-            if (type === 'error') {
-                toast.classList.add('bg-red-600');
-            } else if (type === 'success') {
-                toast.classList.add('bg-green-600');
-            } else if (type === 'warning') {
-                toast.classList.add('bg-yellow-600');
-            } else {
-                toast.classList.add('bg-gray-800');
-            }
-            
-            // Toasts de warning ficam mais tempo na tela
-            const duration = type === 'warning' ? 5000 : 3000;
-            
-            setTimeout(() => {
-                toast.classList.add('hidden');
-            }, duration);
-        }
+        // REMOVIDA: Função showToast() foi movida para js/ui.js e agora é uiManager.showNotification()
 
         // Carregar modelo ao iniciar
         updateModelInfo();

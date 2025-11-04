@@ -17,44 +17,21 @@
     <link rel="stylesheet" href="./css/design-system.css">
     
     <!-- TensorFlow.js -->
+    <!-- Adicionando comentário sobre o CDN: Para produção, considere hospedar localmente ou usar um bundler -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
     
     <style>
         .gradient-bg {
-            background: linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #3b82f6 100%);
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-500) 50%, var(--secondary-500) 100%);
         }
         
         .wave-animation {
-            animation: wave 2s infinite;
+            animation: wave 2s infinite ease-in-out;
         }
         
         @keyframes wave {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        .spectrogram-container {
-            background: #1a1a2e;
-            border-radius: 10px;
-            padding: 20px;
-        }
-        
-        .result-card {
-            transition: all 0.3s ease;
-        }
-        
-        .result-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-        
-        .progress-bar {
-            transition: width 0.5s ease;
-        }
-        
-        #waveform {
-            background: #2d3748;
-            border-radius: 8px;
+            50% { transform: translateY(-8px); }
         }
         
         #dropZone:hover {
@@ -69,8 +46,13 @@
         }
         
         #analyzeBtn:hover:not(:disabled) {
-            transform: scale(1.05) !important;
+            transform: scale(1.03) !important;
             box-shadow: var(--shadow-xl) !important;
+        }
+
+        /* Adicionando sombra ao texto do header para melhor legibilidade */
+        .header-text-shadow {
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
@@ -81,17 +63,17 @@
         <div class="container">
             <div class="flex items-center justify-between" style="flex-wrap: wrap; gap: var(--space-lg);">
                 <div class="flex items-center gap-md">
-                    <div style="font-size: 3rem; animation: wave 2s infinite;">🐸</div>
+                    <div style="font-size: 3rem;" class="wave-animation">🐸</div>
                     <div>
-                        <h1 style="font-size: 2rem; font-weight: 800; margin: 0;">BioAcustic</h1>
-                        <p style="font-size: 0.875rem; opacity: 0.95; margin: 0;">Classificador de Vocalizações de Anfíbios com IA</p>
+                        <h1 style="font-size: 2rem; font-weight: 800; margin: 0;" class="header-text-shadow">BioAcustic</h1>
+                        <p style="font-size: 0.875rem; opacity: 0.95; margin: 0;" class="header-text-shadow">Classificador de Vocalizações de Anfíbios com IA</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-md">
                     <a href="train.html" class="btn btn-lg" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: white; border: 1px solid rgba(255,255,255,0.3);">
                         🎓 Treinar Modelo
                     </a>
-                    <div id="modelStatus" class="badge" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: white; border: 1px solid rgba(255,255,255,0.3);">
+                    <div id="modelStatus" class="badge" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: white; border: 1px solid rgba(255,255,255,0.3); padding: var(--space-sm) var(--space-md);">
                         <span class="spinner"></span> Carregando...
                     </div>
                 </div>
@@ -100,13 +82,12 @@
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
+    <main class="container" style="padding-top: var(--space-2xl); padding-bottom: var(--space-2xl);">
         
-        <!-- Status Alert -->
-        <div id="statusAlert" class="hidden mb-6 p-4 rounded-lg shadow-md"></div>
+        <!-- REMOVIDO: O statusAlert foi removido. js/ui.js agora cria notificações dinamicamente -->
         
         <!-- Upload Section -->
-        <section class="card">
+        <section class="card fade-in">
             <div class="card-header">
                 <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: var(--space-sm);">
                     📤 Enviar Áudio
@@ -134,9 +115,9 @@
                         <label style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm);">
                             🎤 Gravar ao vivo
                         </label>
-                        <div style="border: 2px solid var(--gray-200); border-radius: var(--radius-xl); padding: var(--space-2xl); text-align: center; background: white; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div style="border: 1px solid var(--gray-200); border-radius: var(--radius-xl); padding: var(--space-2xl); text-align: center; background: white; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">
                             <div style="font-size: 3rem; margin-bottom: var(--space-md);">🎙️</div>
-                            <button id="recordBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: var(--radius-full);">
+                            <button id="recordBtn" class="btn" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border-radius: var(--radius-full); box-shadow: var(--shadow-md);">
                                 ⏺ Iniciar Gravação
                             </button>
                             <p id="recordingStatus" style="font-size: 0.875rem; color: var(--gray-500); margin-top: var(--space-md);"></p>
@@ -157,7 +138,7 @@
                 
                 <!-- Analyze Button -->
                 <div style="text-align: center; margin-top: var(--space-xl);">
-                    <button id="analyzeBtn" class="btn btn-primary btn-lg" disabled style="box-shadow: var(--shadow-lg); transform: scale(1); transition: transform var(--transition-base);">
+                    <button id="analyzeBtn" class="btn btn-primary btn-lg" disabled style="box-shadow: var(--shadow-lg); transform: scale(1); transition: transform var(--transition-base), box-shadow var(--transition-base);">
                         🧠 Analisar Vocalização
                     </button>
                 </div>
@@ -195,7 +176,7 @@
                         <h3 style="font-size: 1rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-md);">
                             📈 Mel-Espectrograma
                         </h3>
-                        <div style="background: linear-gradient(135deg, var(--gray-900), var(--gray-800)); border-radius: var(--radius-xl); padding: var(--space-xl);">
+                        <div style="background: linear-gradient(135deg, var(--gray-900), var(--gray-800)); border-radius: var(--radius-xl); padding: var(--space-xl); border: 1px solid var(--gray-700);">
                             <canvas id="spectrogramCanvas" style="width: 100%; height: 200px; border-radius: var(--radius-lg);"></canvas>
                         </div>
                     </div>
@@ -203,7 +184,7 @@
             </div>
             
             <!-- Species Info Card -->
-            <div id="speciesInfoCard" class="hidden" style="background: linear-gradient(135deg, #f0fdf4, #dbeafe); border-radius: var(--radius-xl); padding: var(--space-xl); border: 2px solid var(--primary-200); box-shadow: var(--shadow-md);">
+            <div id="speciesInfoCard" class="hidden" style="background: linear-gradient(135deg, var(--primary-50), var(--secondary-50)); border-radius: var(--radius-xl); padding: var(--space-xl); border: 1px solid var(--primary-200); box-shadow: var(--shadow-md);">
                 <h3 style="font-size: 1.125rem; font-weight: 700; color: var(--gray-900); margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm);">
                     ℹ️ Informações da Espécie
                 </h3>
@@ -227,6 +208,8 @@
         </div>
     </footer>
 
+    <!-- O container de notificação será injetado aqui pelo ui.js -->
+    
     <!-- Scripts -->
     <script type="module" src="./js/app.js"></script>
 
