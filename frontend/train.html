@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="./css/design-system.css">
     
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         .hero-gradient {
             background: linear-gradient(135deg, var(--accent-purple) 0%, #6366f1 50%, var(--secondary-500) 100%);
@@ -339,7 +340,10 @@
                                 🧹 Limpar Dados
                             </button>
                             <button id="exportModelBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, var(--accent-purple), #7c3aed); color: white;" disabled>
-                                📦 Exportar Modelo
+                                📦 Exportar Modelo (JSON)
+                            </button>
+                            <button id="exportFirebaseBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #ff9800, #f57c00); color: white;" disabled>
+                                🔥 Exportar para Firebase ML
                             </button>
                             <button id="importModelBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, var(--secondary-500), #4f46e5); color: white;">
                                 📥 Importar Modelo
@@ -423,6 +427,7 @@
         const deleteModelBtn = document.getElementById('deleteModelBtn');
         const clearDataBtn = document.getElementById('clearDataBtn');
         const exportModelBtn = document.getElementById('exportModelBtn');
+        const exportFirebaseBtn = document.getElementById('exportFirebaseBtn');
         const importModelBtn = document.getElementById('importModelBtn');
         const mergeModelsBtn = document.getElementById('mergeModelsBtn');
         const modelInfo = document.getElementById('modelInfo');
@@ -847,6 +852,7 @@
                 uiManager.showNotification('✅ Treinamento concluído!', 'success');
                 saveModelBtn.disabled = false;
                 exportModelBtn.disabled = false;
+                exportFirebaseBtn.disabled = false;
                 
                 // Aguardar um momento para garantir estabilidade antes de salvar
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -989,6 +995,149 @@
                 uiManager.showNotification('❌ Erro ao exportar: ' + error.message, 'error');
             }
         });
+
+        // Exportar para Firebase ML
+        exportFirebaseBtn.addEventListener('click', async () => {
+            if (!trainer.model) {
+                uiManager.showNotification('❌ Nenhum modelo para exportar', 'error');
+                return;
+            }
+
+            try {
+                uiManager.showNotification('🔄 Preparando modelo para Firebase ML...', 'info');
+                
+                // Criar diretório temporário para salvar os arquivos
+                const timestamp = Date.now();
+                const folderName = `bioacustic-firebase-${timestamp}`;
+                
+                // Salvar modelo em formato TensorFlow.js (arquivos separados)
+                const saveHandler = tf.io.withSaveHandler(async (artifacts) => {
+                    // Criar ZIP com os arquivos
+                    const JSZip = window.JSZip || await loadJSZip();
+                    const zip = new JSZip();
+                    
+                    // Adicionar model.json
+                    const modelJson = {
+                        modelTopology: artifacts.modelTopology,
+                        weightsManifest: [{
+                            paths: ['group1-shard1of1.bin'],
+                            weights: artifacts.weightSpecs
+                        }],
+                        format: 'layers-model',
+                        generatedBy: 'BioAcustic v1.0',
+                        convertedBy: null
+                    };
+                    
+                    zip.file('model.json', JSON.stringify(modelJson, null, 2));
+                    
+                    // Adicionar weights (binário)
+                    zip.file('group1-shard1of1.bin', artifacts.weightData);
+                    
+                    // Adicionar arquivo de metadados
+                    const metadata = {
+                        name: 'BioAcustic Audio Classifier',
+                        version: '1.0',
+                        description: 'Modelo CNN para classificação de espécies por áudio',
+                        author: 'BioAcustic Project',
+                        created: new Date().toISOString(),
+                        classes: trainer.classNames,
+                        numClasses: trainer.classNames.length,
+                        inputShape: [128, 126, 3],
+                        framework: 'TensorFlow.js',
+                        architecture: 'CNN Sequential',
+                        trainingData: Array.from(trainer.trainingData.entries()).map(([k, v]) => ({
+                            species: k,
+                            samples: v.length
+                        }))
+                    };
+                    
+                    zip.file('metadata.json', JSON.stringify(metadata, null, 2));
+                    
+                    // Adicionar arquivo README com instruções
+                    const readme = `# BioAcustic Model - Firebase ML
+
+## 📦 Conteúdo
+- \`model.json\`: Topologia do modelo
+- \`group1-shard1of1.bin\`: Pesos do modelo
+- \`metadata.json\`: Informações sobre o modelo
+
+## 🔥 Como usar no Firebase ML
+
+### 1. Upload via Console Firebase
+1. Acesse Firebase Console > ML > Custom models
+2. Clique em "Add a custom model"
+3. Faça upload dos arquivos \`model.json\` e \`group1-shard1of1.bin\`
+
+### 2. Via Firebase CLI
+\`\`\`bash
+firebase ml:models:create bioacustic-model \\
+  --input model.json \\
+  --input group1-shard1of1.bin
+\`\`\`
+
+### 3. Usar no App
+\`\`\`javascript
+// Web
+import * as tf from '@tensorflow/tfjs';
+const model = await tf.loadLayersModel('https://firebasestorage.googleapis.com/.../model.json');
+
+// Android/iOS
+// Use Firebase ML Kit Custom Model API
+\`\`\`
+
+## 📊 Classes Reconhecidas
+${trainer.classNames.map((name, i) => `${i + 1}. ${name}`).join('\n')}
+
+## 🎯 Input Shape
+- Spectrograms: 128x126x3
+- Audio: Processado como Mel-spectrograms
+
+## 📝 Notas
+- Framework: TensorFlow.js ${tf.version.tfjs}
+- Total de parâmetros: ${trainer.model.countParams().toLocaleString()}
+- Formato: layers-model (Keras)
+`;
+                    
+                    zip.file('README.md', readme);
+                    
+                    // Gerar ZIP
+                    const blob = await zip.generateAsync({ type: 'blob' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${folderName}.zip`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    
+                    uiManager.showNotification('✅ Modelo Firebase ML exportado!', 'success', 5000);
+                    uiManager.showNotification('📦 Extraia o ZIP e faça upload no Firebase Console', 'info', 8000);
+                    
+                    return { modelArtifactsInfo: { dateSaved: new Date(), modelTopologyType: 'JSON' } };
+                });
+                
+                await trainer.model.save(saveHandler);
+                
+            } catch (error) {
+                console.error('Erro ao exportar para Firebase:', error);
+                
+                if (error.message && error.message.includes('JSZip')) {
+                    uiManager.showNotification('❌ Biblioteca JSZip não encontrada. Baixe manualmente.', 'error');
+                } else {
+                    uiManager.showNotification('❌ Erro ao exportar: ' + error.message, 'error');
+                }
+            }
+        });
+        
+        // Função para carregar JSZip dinamicamente
+        async function loadJSZip() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                script.onload = () => resolve(window.JSZip);
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
 
         // Importar modelo
         importModelBtn.addEventListener('click', () => {
@@ -1240,6 +1389,7 @@
                     saveModelBtn.disabled = false;
                     testModelBtn.disabled = false;
                     exportModelBtn.disabled = false; // Habilitar exportação
+                    exportFirebaseBtn.disabled = false; // Habilitar exportação Firebase
                     
                     // ATUALIZADO: Usando uiManager.showNotification
                     uiManager.showNotification('✅ Modelo encontrado e carregado!', 'success');
