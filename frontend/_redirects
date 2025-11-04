@@ -1,0 +1,5 @@
+# Redirects para SPA (Single Page Application)
+/*    /index.html   200
+
+# Force HTTPS (opcional)
+http://*  https://:splat  301!
