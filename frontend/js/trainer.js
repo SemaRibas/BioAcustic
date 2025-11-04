@@ -69,7 +69,7 @@ export class BrowserTrainer {
             console.log(`   Shape detectado: [${inputShape.join(', ')}]`);
         }
         
-        // Modelo CNN otimizado com BatchNormalization e arquitetura mais profunda
+        // Modelo CNN otimizado - balanceando capacidade e estabilidade
         const model = tf.sequential();
         
         // Bloco 1: Conv2D + BatchNorm + Pooling
@@ -78,66 +78,50 @@ export class BrowserTrainer {
             filters: 32,
             kernelSize: 3,
             activation: 'relu',
-            padding: 'same',
-            kernelRegularizer: tf.regularizers.l2({ l2: 0.001 })
+            padding: 'same'
         }));
         model.add(tf.layers.batchNormalization());
         model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
-        model.add(tf.layers.dropout({ rate: 0.25 }));
+        model.add(tf.layers.dropout({ rate: 0.3 }));
         
         // Bloco 2: Conv2D + BatchNorm + Pooling
         model.add(tf.layers.conv2d({
             filters: 64,
             kernelSize: 3,
             activation: 'relu',
-            padding: 'same',
-            kernelRegularizer: tf.regularizers.l2({ l2: 0.001 })
+            padding: 'same'
         }));
         model.add(tf.layers.batchNormalization());
         model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
-        model.add(tf.layers.dropout({ rate: 0.25 }));
+        model.add(tf.layers.dropout({ rate: 0.3 }));
         
         // Bloco 3: Conv2D + BatchNorm + Pooling
         model.add(tf.layers.conv2d({
             filters: 128,
             kernelSize: 3,
             activation: 'relu',
-            padding: 'same',
-            kernelRegularizer: tf.regularizers.l2({ l2: 0.001 })
+            padding: 'same'
         }));
         model.add(tf.layers.batchNormalization());
         model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
-        model.add(tf.layers.dropout({ rate: 0.25 }));
+        model.add(tf.layers.dropout({ rate: 0.4 }));
         
-        // Bloco 4: Conv2D adicional para mais capacidade
-        model.add(tf.layers.conv2d({
-            filters: 256,
-            kernelSize: 3,
-            activation: 'relu',
-            padding: 'same',
-            kernelRegularizer: tf.regularizers.l2({ l2: 0.001 })
-        }));
-        model.add(tf.layers.batchNormalization());
-        model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
-        
-        // Flatten e Dense
+        // Flatten e Dense (removido bloco 4 para evitar travamento)
         model.add(tf.layers.flatten());
         model.add(tf.layers.dropout({ rate: 0.5 }));
         
         // Camadas Dense
         model.add(tf.layers.dense({ 
             units: 128, 
-            activation: 'relu',
-            kernelRegularizer: tf.regularizers.l2({ l2: 0.001 })
+            activation: 'relu'
         }));
-        model.add(tf.layers.batchNormalization());
         model.add(tf.layers.dropout({ rate: 0.5 }));
         
         model.add(tf.layers.dense({ units: numClasses, activation: 'softmax' }));
         
-        // Compilar com learning rate menor para melhor convergência
+        // Compilar com learning rate otimizado
         model.compile({
-            optimizer: tf.train.adam(0.0005),
+            optimizer: tf.train.adam(0.001),
             loss: 'categoricalCrossentropy',
             metrics: ['accuracy']
         });
@@ -198,10 +182,17 @@ export class BrowserTrainer {
             const { xs, ys } = this.prepareDataset();
             
             console.log('🎓 Iniciando treinamento...');
-            console.log(`   Épocas: ${epochs}`);
-            console.log(`   Batch size: ${batchSize}`);
-            console.log(`   Total amostras: ${xs.shape[0]}`);
-            console.log(`   ⚠️  Treinamento mais longo para maior acurácia!`);
+            console.log(`   📊 Configurações:`);
+            console.log(`      • Épocas máximas: ${epochs}`);
+            console.log(`      • Tamanho do lote: ${batchSize}`);
+            console.log(`      • Total de amostras: ${xs.shape[0]}`);
+            console.log(`   `);
+            console.log(`   💡 Sobre as métricas:`);
+            console.log(`      • ERRO (Loss): Quanto menor, melhor! Indica o erro do modelo.`);
+            console.log(`      • ACURÁCIA: % de previsões corretas. Meta: > 85%`);
+            console.log(`      • Treinamento: Aprende com 80% dos dados`);
+            console.log(`      • Validação: Testa com 20% dos dados (não usados no treino)`);
+            console.log(`   `);
             
             // Ajustar batch size baseado no número de amostras para evitar sobrecarga
             const totalSamples = xs.shape[0];
@@ -215,7 +206,7 @@ export class BrowserTrainer {
             let bestValAcc = 0;
             let bestWeights = null;
             let patienceCounter = 0;
-            const patience = 10; // Parar se não melhorar por 10 épocas
+            const patience = 15; // Parar se não melhorar por 15 épocas
             
             // Treinar com gerenciamento de memória melhorado e early stopping
             const history = await this.model.fit(xs, ys, {
@@ -225,40 +216,57 @@ export class BrowserTrainer {
                 shuffle: true,
                 callbacks: {
                     onEpochBegin: async (epoch) => {
-                        // Ajustar learning rate dinamicamente (cosine annealing)
-                        if (epoch > 0 && epoch % 10 === 0) {
+                        // Pausar a cada época para liberar GPU
+                        await tf.nextFrame();
+                        
+                        // Ajustar learning rate dinamicamente
+                        if (epoch > 0 && epoch % 15 === 0) {
                             const currentLR = this.model.optimizer.learningRate;
-                            const newLR = currentLR * 0.5;
+                            const newLR = currentLR * 0.7;
                             this.model.optimizer.learningRate = newLR;
-                            console.log(`   📉 Learning rate reduzido: ${currentLR.toFixed(6)} → ${newLR.toFixed(6)}`);
+                            console.log(`   📉 Taxa de aprendizado reduzida: ${currentLR.toFixed(6)} → ${newLR.toFixed(6)}`);
                         }
                     },
                     onEpochEnd: async (epoch, logs) => {
-                        const valAcc = logs.val_acc || logs.val_accuracy || 0;
+                        // Pausar após cada época
+                        await tf.nextFrame();
                         
-                        console.log(`   Época ${epoch + 1}/${epochs}`);
-                        console.log(`      Training   - loss: ${logs.loss.toFixed(4)}, acc: ${logs.acc.toFixed(4)}`);
-                        console.log(`      Validation - loss: ${logs.val_loss.toFixed(4)}, acc: ${valAcc.toFixed(4)}`);
+                        const valAcc = logs.val_acc || logs.val_accuracy || 0;
+                        const trainAcc = logs.acc || logs.accuracy || 0;
+                        
+                        console.log(`   📊 Época ${epoch + 1}/${epochs}`);
+                        console.log(`      Treinamento - Erro: ${logs.loss.toFixed(4)}, Acurácia: ${(trainAcc * 100).toFixed(2)}%`);
+                        console.log(`      Validação   - Erro: ${logs.val_loss.toFixed(4)}, Acurácia: ${(valAcc * 100).toFixed(2)}%`);
                         
                         // Early stopping: salvar melhor modelo
                         if (valAcc > bestValAcc) {
                             bestValAcc = valAcc;
+                            // Limpar pesos anteriores se existirem
+                            if (bestWeights) {
+                                bestWeights.forEach(w => w.dispose());
+                            }
                             bestWeights = await this.model.getWeights();
                             patienceCounter = 0;
-                            console.log(`      ✅ Novo melhor modelo! Val Acc: ${(valAcc * 100).toFixed(2)}%`);
+                            console.log(`      ✅ Melhor modelo até agora! Acurácia Validação: ${(valAcc * 100).toFixed(2)}%`);
                         } else {
                             patienceCounter++;
+                            console.log(`      ⏳ Sem melhoria há ${patienceCounter} épocas`);
                             if (patienceCounter >= patience) {
-                                console.log(`      ⚠️ Early stopping! Sem melhoria por ${patience} épocas`);
+                                console.log(`      🛑 Treinamento interrompido! Sem melhoria por ${patience} épocas consecutivas`);
                                 this.model.stopTraining = true;
                             }
                         }
                         
-                        // Liberar memória GPU periodicamente
-                        if ((epoch + 1) % 5 === 0) {
-                            await tf.nextFrame(); // Permitir que a GPU respire
+                        // Liberar memória GPU a cada 3 épocas
+                        if ((epoch + 1) % 3 === 0) {
                             const memInfo = tf.memory();
-                            console.log(`      💾 GPU: ${(memInfo.numBytes / 1024 / 1024).toFixed(2)} MB, ${memInfo.numTensors} tensores`);
+                            console.log(`      💾 Memória GPU: ${(memInfo.numBytes / 1024 / 1024).toFixed(2)} MB, ${memInfo.numTensors} tensores`);
+                            
+                            // Forçar limpeza se muitos tensores
+                            if (memInfo.numTensors > 100) {
+                                console.log(`      🧹 Limpando tensores...`);
+                                await tf.nextFrame();
+                            }
                         }
                         
                         if (onEpochEnd) {
@@ -270,7 +278,7 @@ export class BrowserTrainer {
             
             // Restaurar melhor modelo se early stopping foi ativado
             if (bestWeights) {
-                console.log(`🏆 Restaurando melhor modelo (Val Acc: ${(bestValAcc * 100).toFixed(2)}%)`);
+                console.log(`🏆 Restaurando melhor modelo (Acurácia Validação: ${(bestValAcc * 100).toFixed(2)}%)`);
                 await this.model.setWeights(bestWeights);
                 // Limpar pesos antigos
                 bestWeights.forEach(w => w.dispose());

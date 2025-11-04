@@ -648,11 +648,18 @@
                     document.getElementById('currentEpoch').textContent = epoch + 1;
                     document.getElementById('epochProgress').textContent = Math.round(progress) + '%';
                     document.getElementById('currentLoss').textContent = logs.loss.toFixed(4);
-                    document.getElementById('currentAccuracy').textContent = (logs.acc * 100).toFixed(2) + '%';
                     
-                    // Log
-                    const logEntry = `Época ${epoch + 1}: loss=${logs.loss.toFixed(4)}, acc=${(logs.acc * 100).toFixed(2)}%\n`;
-                    document.getElementById('trainingLog').textContent += logEntry;
+                    // Calcular acurácia (suporta ambos os formatos)
+                    const trainAcc = logs.acc || logs.accuracy || 0;
+                    const valAcc = logs.val_acc || logs.val_accuracy || 0;
+                    document.getElementById('currentAccuracy').textContent = (trainAcc * 100).toFixed(2) + '%';
+                    
+                    // Log traduzido
+                    const logEntry = `Época ${epoch + 1}/${totalEpochs}\n`;
+                    const logTrain = `  Treinamento: Erro=${logs.loss.toFixed(4)}, Acurácia=${(trainAcc * 100).toFixed(2)}%\n`;
+                    const logVal = logs.val_loss ? `  Validação: Erro=${logs.val_loss.toFixed(4)}, Acurácia=${(valAcc * 100).toFixed(2)}%\n\n` : '\n';
+                    
+                    document.getElementById('trainingLog').textContent += logEntry + logTrain + logVal;
                     document.getElementById('trainingLog').scrollTop = document.getElementById('trainingLog').scrollHeight;
                 });
 
