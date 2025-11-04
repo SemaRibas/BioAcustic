@@ -67,6 +67,38 @@
             border-style: solid !important;
         }
         
+        .file-item {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            margin-bottom: var(--space-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            transition: all var(--transition-base);
+        }
+        
+        .file-item:hover {
+            box-shadow: var(--shadow-sm);
+            border-color: var(--primary-300);
+        }
+        
+        .replicate-input {
+            width: 60px;
+            padding: var(--space-xs) var(--space-sm);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-md);
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .replicate-input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+        
         @media (max-width: 1024px) {
             .grid > div[style*="grid-column: span 2"] {
                 grid-column: span 1 !important;
@@ -149,22 +181,37 @@
                         <!-- Upload de Arquivos -->
                         <div style="margin-bottom: var(--space-lg);">
                             <label style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-sm);">
-                                📁 Arquivos de Áudio
+                                📁 Arquivos de Áudio (Seleção Múltipla)
                             </label>
                             <div class="upload-zone-training" id="dropZone">
                                 <input type="file" id="audioFiles" accept="audio/*" multiple style="display: none;">
                                 <div style="font-size: 3rem; margin-bottom: var(--space-md);">🎵</div>
                                 <p style="font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-xs);">
-                                    Arraste arquivos ou clique para selecionar
+                                    Selecione múltiplos arquivos de uma vez
                                 </p>
                                 <p style="font-size: 0.875rem; color: var(--gray-500);">
-                                    WAV, MP3, OGG, FLAC
+                                    Arraste vários arquivos ou clique para selecionar
                                 </p>
                             </div>
                         </div>
                         
-                        <button id="addExamplesBtn" class="btn btn-primary btn-lg" style="width: 100%;">
-                            ➕ Adicionar Exemplos
+                        <!-- Lista de Arquivos Selecionados -->
+                        <div id="selectedFilesContainer" class="hidden" style="margin-bottom: var(--space-lg);">
+                            <div class="flex items-center justify-between" style="margin-bottom: var(--space-sm);">
+                                <label style="font-size: 0.875rem; font-weight: 600; color: var(--gray-700);">
+                                    📋 Arquivos Selecionados (<span id="fileCount">0</span>)
+                                </label>
+                                <button id="clearFilesBtn" class="btn btn-sm btn-ghost" style="color: var(--error);">
+                                    🗑️ Limpar
+                                </button>
+                            </div>
+                            <div id="filesList" style="max-height: 300px; overflow-y: auto; background: var(--gray-50); border-radius: var(--radius-lg); padding: var(--space-md);">
+                                <!-- Arquivos serão listados aqui -->
+                            </div>
+                        </div>
+                        
+                        <button id="addExamplesBtn" class="btn btn-primary btn-lg" style="width: 100%;" disabled>
+                            ➕ Adicionar Todos ao Dataset
                         </button>
                     </div>
                 </section>
@@ -316,6 +363,10 @@
         const audioFiles = document.getElementById('audioFiles');
         const dropZone = document.getElementById('dropZone');
         const addExamplesBtn = document.getElementById('addExamplesBtn');
+        const selectedFilesContainer = document.getElementById('selectedFilesContainer');
+        const filesList = document.getElementById('filesList');
+        const fileCount = document.getElementById('fileCount');
+        const clearFilesBtn = document.getElementById('clearFilesBtn');
         const datasetStats = document.getElementById('datasetStats');
         const trainBtnContainer = document.getElementById('trainBtnContainer');
         const trainModelBtn = document.getElementById('trainModelBtn');
@@ -327,33 +378,119 @@
         const importDataBtn = document.getElementById('importDataBtn');
         const modelInfo = document.getElementById('modelInfo');
 
-        // Drop zone
+        // Estado dos arquivos selecionados
+        let selectedFiles = [];
+
+        // Função para renderizar lista de arquivos
+        function renderFilesList() {
+            if (selectedFiles.length === 0) {
+                selectedFilesContainer.classList.add('hidden');
+                addExamplesBtn.disabled = true;
+                return;
+            }
+
+            selectedFilesContainer.classList.remove('hidden');
+            addExamplesBtn.disabled = false;
+            fileCount.textContent = selectedFiles.length;
+
+            filesList.innerHTML = selectedFiles.map((fileData, index) => `
+                <div class="file-item">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; font-size: 0.875rem; color: var(--gray-900); margin-bottom: var(--space-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${fileData.file.name}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--gray-500);">
+                            ${(fileData.file.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                        <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                            <button onclick="decrementReplicas(${index})" class="btn btn-sm btn-ghost" style="padding: var(--space-xs);">➖</button>
+                            <input 
+                                type="number" 
+                                min="1" 
+                                max="20" 
+                                value="${fileData.replicas}" 
+                                class="replicate-input"
+                                onchange="updateReplicas(${index}, this.value)"
+                            >
+                            <button onclick="incrementReplicas(${index})" class="btn btn-sm btn-ghost" style="padding: var(--space-xs);">➕</button>
+                        </div>
+                        <button onclick="removeFile(${index})" class="btn btn-sm" style="background: var(--error); color: white; padding: var(--space-xs) var(--space-sm);">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Funções globais para manipular réplicas
+        window.incrementReplicas = (index) => {
+            if (selectedFiles[index].replicas < 20) {
+                selectedFiles[index].replicas++;
+                renderFilesList();
+            }
+        };
+
+        window.decrementReplicas = (index) => {
+            if (selectedFiles[index].replicas > 1) {
+                selectedFiles[index].replicas--;
+                renderFilesList();
+            }
+        };
+
+        window.updateReplicas = (index, value) => {
+            const numValue = parseInt(value) || 1;
+            selectedFiles[index].replicas = Math.max(1, Math.min(20, numValue));
+            renderFilesList();
+        };
+
+        window.removeFile = (index) => {
+            selectedFiles.splice(index, 1);
+            renderFilesList();
+        };
+
+        // Processar arquivos selecionados
+        function handleFiles(files) {
+            const newFiles = Array.from(files).map(file => ({
+                file: file,
+                replicas: 1
+            }));
+            selectedFiles = [...selectedFiles, ...newFiles];
+            renderFilesList();
+        }
+
+        // Event listeners
+        audioFiles.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        clearFilesBtn.addEventListener('click', () => {
+            selectedFiles = [];
+            audioFiles.value = '';
+            renderFilesList();
+        });
+
+        // Drop zone eventos
         dropZone.addEventListener('click', () => audioFiles.click());
         
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
-            dropZone.classList.add('border-green-500', 'bg-green-50');
+            dropZone.classList.add('drag-over');
         });
         
         dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('border-green-500', 'bg-green-50');
+            dropZone.classList.remove('drag-over');
         });
         
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
-            dropZone.classList.remove('border-green-500', 'bg-green-50');
-            audioFiles.files = e.dataTransfer.files;
-            handleFileSelection();
+            dropZone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            handleFiles(files);
         });
 
-        audioFiles.addEventListener('change', handleFileSelection);
-
-        function handleFileSelection() {
-            uploadedFiles = Array.from(audioFiles.files);
-            showToast(`${uploadedFiles.length} arquivo(s) selecionado(s)`);
-        }
-
-        // Adicionar exemplos
+        // Adicionar exemplos (com réplicas)
         addExamplesBtn.addEventListener('click', async () => {
             const speciesName = speciesNameInput.value.trim();
             
@@ -362,54 +499,71 @@
                 return;
             }
             
-            if (uploadedFiles.length === 0) {
+            if (selectedFiles.length === 0) {
                 showToast('Selecione arquivos de áudio!', 'error');
                 return;
             }
 
             addExamplesBtn.disabled = true;
+            const originalText = addExamplesBtn.textContent;
             addExamplesBtn.textContent = '⏳ Processando...';
 
             try {
                 let successCount = 0;
                 let errorCount = 0;
+                let totalProcessed = 0;
+                const totalToProcess = selectedFiles.reduce((acc, fileData) => acc + fileData.replicas, 0);
                 
-                for (let i = 0; i < uploadedFiles.length; i++) {
-                    const file = uploadedFiles[i];
-                    showToast(`Processando ${i + 1}/${uploadedFiles.length}: ${file.name}`);
+                for (let fileIndex = 0; fileIndex < selectedFiles.length; fileIndex++) {
+                    const fileData = selectedFiles[fileIndex];
+                    const file = fileData.file;
+                    
+                    showToast(`Processando arquivo ${fileIndex + 1}/${selectedFiles.length}: ${file.name}`);
                     
                     try {
-                        // Processar áudio
+                        // Processar áudio uma vez
                         const audioBuffer = await loadAudioFile(file);
-                        const tensor3D = await audioProcessor.processAudioForTraining(audioBuffer);
                         
-                        // Adicionar ao dataset
-                        trainer.addTrainingExample(tensor3D, speciesName);
-                        successCount++;
+                        // Adicionar réplicas
+                        for (let replica = 0; replica < fileData.replicas; replica++) {
+                            totalProcessed++;
+                            showToast(`Processando réplica ${replica + 1}/${fileData.replicas} do arquivo ${file.name} (${totalProcessed}/${totalToProcess})`);
+                            
+                            try {
+                                const tensor3D = await audioProcessor.processAudioForTraining(audioBuffer);
+                                
+                                // Adicionar ao dataset
+                                trainer.addTrainingExample(tensor3D, speciesName);
+                                successCount++;
+                                
+                            } catch (replicaError) {
+                                console.error(`Erro ao processar réplica ${replica + 1} de ${file.name}:`, replicaError);
+                                errorCount++;
+                                showToast(`❌ Erro na réplica ${replica + 1} de ${file.name}`, 'error');
+                            }
+                        }
                         
                     } catch (fileError) {
-                        console.error(`Erro ao processar ${file.name}:`, fileError);
+                        console.error(`Erro ao carregar ${file.name}:`, fileError);
                         errorCount++;
-                        showToast(`❌ Erro em ${file.name}: ${fileError.message}`, 'error');
+                        showToast(`❌ Erro ao carregar ${file.name}: ${fileError.message}`, 'error');
                     }
                 }
 
                 if (successCount > 0) {
                     showToast(`✅ ${successCount} exemplos adicionados para ${speciesName}`, 'success');
-                }
-                
-                if (errorCount > 0) {
-                    showToast(`⚠️ ${errorCount} arquivo(s) falharam`, 'error');
-                }
-                
-                // Limpar inputs apenas se houver sucesso
-                if (successCount > 0) {
-                    speciesNameInput.value = '';
+                    
+                    // Limpar arquivos selecionados
+                    selectedFiles = [];
                     audioFiles.value = '';
-                    uploadedFiles = [];
+                    renderFilesList();
                     
                     // Atualizar UI
                     updateDatasetStats();
+                }
+                
+                if (errorCount > 0) {
+                    showToast(`⚠️ ${errorCount} réplica(s) falharam`, 'error');
                 }
 
             } catch (error) {
@@ -417,7 +571,7 @@
                 showToast('Erro ao processar áudios: ' + error.message, 'error');
             } finally {
                 addExamplesBtn.disabled = false;
-                addExamplesBtn.textContent = '➕ Adicionar Exemplos';
+                addExamplesBtn.textContent = originalText;
             }
         });
 
