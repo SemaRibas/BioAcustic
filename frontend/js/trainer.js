@@ -118,7 +118,10 @@ export class BrowserTrainer {
             kernelRegularizer: tf.regularizers.l2({ l2: 0.001 })
         }));
         model.add(tf.layers.batchNormalization());
-        model.add(tf.layers.globalAveragePooling2d());
+        model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
+        
+        // Flatten e Dense
+        model.add(tf.layers.flatten());
         model.add(tf.layers.dropout({ rate: 0.5 }));
         
         // Camadas Dense
