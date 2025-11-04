@@ -1,53 +1,89 @@
 /**
  * Gerenciador de Interface do Usuário
  * Responsável por atualizar elementos visuais
+ *
+ * ATUALIZAÇÃO:
+ * - Substituído `showAlert` por `showNotification`
+ * - Sistema de notificação agora cria "toasts" dinâmicos
+ * que aparecem e desaparecem com animação.
  */
 
 export class UIManager {
+    
     constructor() {
         this.resultsVisible = false;
+        this.notificationContainer = null;
+        this.initNotificationContainer();
     }
+    
+    /**
+     * Cria o container de notificações no body
+     */
+    initNotificationContainer() {
+        if (document.getElementById('notification-container')) {
+            this.notificationContainer = document.getElementById('notification-container');
+        } else {
+            this.notificationContainer = document.createElement('div');
+            this.notificationContainer.id = 'notification-container';
+            document.body.appendChild(this.notificationContainer);
+        }
+    }
+    
+    /**
+     * Exibe uma notificação toast dinâmica
+     * @param {string} message - A mensagem a ser exibida
+     * @param {string} type - 'info', 'success', 'warning', 'error'
+     * @param {number} duration - Duração em ms
+     */
+    showNotification(message, type = 'info', duration = 4000) {
+        // 1. Criar o elemento toast
+        const toast = document.createElement('div');
+        toast.className = `notification-toast ${type}`;
+        toast.textContent = message;
+        
+        // 2. Adicionar ao container
+        this.notificationContainer.appendChild(toast);
+        
+        // 3. Remover após a duração
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            
+            // Remover do DOM após a animação de fade-out
+            toast.addEventListener('animationend', () => {
+                if (toast.parentNode === this.notificationContainer) {
+                    this.notificationContainer.removeChild(toast);
+                }
+            });
+            
+        }, duration);
+    }
+    
+    // FUNÇÃO ANTIGA (showAlert) REMOVIDA
+    // As chamadas a ela devem ser substituídas por showNotification
     
     updateModelStatus(status, message) {
         const statusDiv = document.getElementById('modelStatus');
+        if (!statusDiv) return;
         
         if (status === 'success') {
-            statusDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-            statusDiv.classList.add('text-green-300');
+            statusDiv.innerHTML = `✅ ${message}`;
+            statusDiv.style.color = 'white';
+            statusDiv.style.background = 'rgba(255, 255, 255, 0.2)';
+            statusDiv.style.borderColor = 'var(--primary-300)';
         } else if (status === 'error') {
-            statusDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-            statusDiv.classList.add('text-red-300');
+            statusDiv.innerHTML = `❌ ${message}`;
+            statusDiv.style.color = 'white';
+            statusDiv.style.background = 'rgba(220, 38, 38, 0.5)'; // Vermelho
+            statusDiv.style.borderColor = 'var(--error-300)';
         } else {
-            statusDiv.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${message}`;
+            statusDiv.innerHTML = `<span class="spinner" style="border-top-color: white;"></span> ${message}`;
         }
-    }
-    
-    showAlert(type, message) {
-        const alertDiv = document.getElementById('statusAlert');
-        
-        alertDiv.classList.remove('hidden', 'bg-green-100', 'bg-red-100', 'bg-blue-100', 
-                                  'text-green-800', 'text-red-800', 'text-blue-800');
-        
-        if (type === 'success') {
-            alertDiv.classList.add('bg-green-100', 'text-green-800');
-            alertDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${message}`;
-        } else if (type === 'error') {
-            alertDiv.classList.add('bg-red-100', 'text-red-800');
-            alertDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${message}`;
-        } else {
-            alertDiv.classList.add('bg-blue-100', 'text-blue-800');
-            alertDiv.innerHTML = `<i class="fas fa-info-circle mr-2"></i>${message}`;
-        }
-        
-        // Auto-esconder após 5 segundos
-        setTimeout(() => {
-            alertDiv.classList.add('hidden');
-        }, 5000);
     }
     
     showAudioPlayer(file) {
         const container = document.getElementById('audioPlayerContainer');
         const player = document.getElementById('audioPlayer');
+        if (!container || !player) return;
         
         const url = URL.createObjectURL(file);
         player.src = url;
@@ -57,25 +93,42 @@ export class UIManager {
     
     showProcessing(show) {
         const processingDiv = document.getElementById('loadingOverlay');
+        if (!processingDiv) return;
         
         if (show) {
             processingDiv.classList.remove('hidden');
-            this.updateProgress(0);
+            this.updateProgress(0, 'Iniciando...');
         } else {
-            processingDiv.classList.add('hidden');
+            // Adiciona um pequeno delay para a animação de 100% ser visível
+            setTimeout(() => {
+                processingDiv.classList.add('hidden');
+            }, 500);
         }
     }
     
-    updateProgress(percentage) {
+    updateProgress(percentage, text = null) {
         const progressBar = document.getElementById('progressBar');
-        progressBar.style.width = `${percentage}%`;
+        const progressText = document.getElementById('progressText');
+        
+        if (progressBar) {
+            progressBar.style.width = `${percentage}%`;
+        }
+        if (progressText) {
+            if (text) {
+                progressText.textContent = text;
+            } else {
+                progressText.textContent = `${percentage}% Concluído`;
+            }
+        }
     }
     
     showResults(predictions) {
         const resultsSection = document.getElementById('resultsSection');
         const resultsContainer = document.getElementById('resultsContainer');
+        if (!resultsSection || !resultsContainer) return;
         
         resultsSection.classList.remove('hidden');
+        resultsSection.classList.add('fade-in');
         
         // Limpar resultados anteriores
         resultsContainer.innerHTML = '';
@@ -88,17 +141,19 @@ export class UIManager {
         
         // Scroll suave para resultados
         setTimeout(() => {
-            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 300);
     }
     
     createResultCard(prediction, index) {
         const card = document.createElement('div');
-        card.className = 'result-card';
+        // Adicionando 'fade-in' para animação de entrada
+        card.className = 'result-card fade-in';
+        card.style.animationDelay = `${index * 100}ms`;
         
         // Cor da borda baseada na posição
-        const borderColors = ['var(--success-500)', 'var(--primary-500)', 'var(--warning-500)', 
-                              'var(--secondary-500)', 'var(--gray-400)'];
+        const borderColors = ['var(--primary-500)', 'var(--secondary-500)', 'var(--warning)', 
+                              'var(--gray-400)', 'var(--gray-400)'];
         const borderColor = borderColors[index] || 'var(--gray-400)';
         
         // Ícone baseado na confiança
@@ -107,9 +162,9 @@ export class UIManager {
         if (prediction.probability < 0.5) {
             icon = '❓';
         } else if (prediction.probability < 0.7) {
-            icon = '✓';
+            icon = '🤔';
         } else if (prediction.probability >= 0.95) {
-            icon = '✅';
+            icon = '🎯';
         }
         
         // Cor do texto de confiança
@@ -126,6 +181,9 @@ export class UIManager {
             border-left: 4px solid ${borderColor};
             box-shadow: var(--shadow-md);
             transition: all var(--transition-base);
+            animation: fadeIn 0.5s ease-out forwards;
+            animation-delay: ${index * 100}ms;
+            opacity: 0;
         `;
         
         card.innerHTML = `
@@ -137,7 +195,7 @@ export class UIManager {
                             ${prediction.species}
                         </h4>
                         ${index === 0 ? `
-                            <span style="display: inline-block; margin-top: var(--space-xs); font-size: 0.75rem; background: var(--success-100); color: var(--success-800); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-full); font-weight: 600;">
+                            <span class="badge badge-success" style="margin-top: var(--space-xs);">
                                 Mais Provável
                             </span>
                         ` : ''}
@@ -153,17 +211,16 @@ export class UIManager {
             
             <!-- Barra de progresso -->
             <div style="width: 100%; background: var(--gray-200); border-radius: var(--radius-full); height: 12px; overflow: hidden; margin-bottom: var(--space-md);">
-                <div style="height: 100%; border-radius: var(--radius-full); background: ${progressBgColor}; width: ${prediction.confidence}%; transition: width 0.5s ease;">
+                <div class="progress-bar" style="height: 100%; background: ${progressBgColor}; width: ${prediction.confidence}%; transition: width 0.5s ease 0.3s;">
                 </div>
             </div>
             
             <!-- Botão de info -->
             <button 
-                class="species-info-btn"
+                class="species-info-btn btn btn-ghost btn-sm"
                 data-species="${prediction.species}"
-                style="background: transparent; border: none; color: var(--primary-600); font-size: 0.875rem; font-weight: 500; cursor: pointer; padding: var(--space-sm) 0; transition: color var(--transition-base); display: flex; align-items: center; gap: var(--space-xs);"
-                onmouseover="this.style.color='var(--primary-700)'"
-                onmouseout="this.style.color='var(--primary-600)'"
+                style="color: var(--primary-600); padding-left: 0;"
+                onclick="window.handleSpeciesInfoClick('${prediction.species}')"
             >
                 ℹ️ Ver informações da espécie
             </button>
@@ -184,19 +241,20 @@ export class UIManager {
     }
     
     getConfidenceColor(probability) {
-        if (probability >= 0.7) return 'var(--success-600)';
-        if (probability >= 0.5) return 'var(--warning-600)';
+        if (probability >= 0.7) return 'var(--primary-600)';
+        if (probability >= 0.5) return 'var(--warning)';
         return 'var(--gray-600)';
     }
     
     getProgressColor(probability) {
-        if (probability >= 0.7) return 'linear-gradient(90deg, var(--success-500), var(--success-400))';
-        if (probability >= 0.5) return 'linear-gradient(90deg, var(--warning-500), var(--warning-400))';
+        if (probability >= 0.7) return 'linear-gradient(90deg, var(--primary-500), var(--primary-400))';
+        if (probability >= 0.5) return 'linear-gradient(90deg, var(--warning), #fcd34d)';
         return 'var(--gray-500)';
     }
     
     drawSpectrogram(melSpec) {
         const canvas = document.getElementById('spectrogramCanvas');
+        if (!canvas) return;
         const ctx = canvas.getContext('2d');
         
         // Ajustar tamanho do canvas
@@ -222,12 +280,14 @@ export class UIManager {
         const scaleX = canvas.width / width;
         const scaleY = canvas.height / height;
         
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
         for (let i = 0; i < height; i++) {
             for (let j = 0; j < width; j++) {
                 const value = (melSpec[i][j] - min) / (max - min);
                 
-                // Colormap (viridis-like)
-                const color = this.valueToColor(value);
+                // Colormap (Viridis)
+                const color = this.valueToViridis(value);
                 
                 ctx.fillStyle = color;
                 ctx.fillRect(
@@ -241,39 +301,40 @@ export class UIManager {
         
         // Adicionar labels
         ctx.fillStyle = 'white';
-        ctx.font = '12px Arial';
+        ctx.font = '12px var(--font-body)';
         ctx.fillText('Tempo →', canvas.width - 60, canvas.height - 10);
         ctx.save();
-        ctx.translate(15, 60);
+        ctx.translate(15, canvas.height / 2);
         ctx.rotate(-Math.PI / 2);
-        ctx.fillText('Frequência (Hz) →', 0, 0);
+        ctx.textAlign = 'center';
+        ctx.fillText('Frequência (Hz)', 0, 0);
         ctx.restore();
     }
     
-    valueToColor(value) {
-        // Colormap simplificado (azul → verde → amarelo → vermelho)
-        const r = Math.floor(255 * Math.min(1, 2 * value));
-        const g = Math.floor(255 * Math.min(1, 2 * (1 - Math.abs(value - 0.5))));
-        const b = Math.floor(255 * Math.min(1, 2 * (1 - value)));
-        
+    // Colormap Viridis (otimizado)
+    valueToViridis(t) {
+        const r = Math.floor(255 * (0.267004 + t * (2.123048 + t * (-6.758421 + t * (8.963484 + t * (-6.095293 + t * 1.500176))))));
+        const g = Math.floor(255 * (0.005873 + t * (1.020583 + t * (1.618532 + t * (-3.283832 + t * (1.933182 + t * -0.291776))))));
+        const b = Math.floor(255 * (0.504240 + t * (2.302370 + t * (-6.392630 + t * (10.425390 + t * (-10.723042 + t * 4.883623))))));
         return `rgb(${r}, ${g}, ${b})`;
     }
     
     showSpeciesInfo(speciesName) {
         const infoCard = document.getElementById('speciesInfoCard');
         const infoContent = document.getElementById('speciesInfoContent');
+        if (!infoCard || !infoContent) return;
         
         // Aqui você pode buscar informações de uma API ou usar dados locais
         const info = this.getSpeciesInfo(speciesName);
         
         infoContent.innerHTML = `
-            <div>
+            <div class="fade-in">
                 <div style="margin-bottom: var(--space-lg);">
                     <h4 style="font-size: 1.125rem; font-weight: 600; color: var(--gray-900); font-style: italic; margin: 0;">${info.scientificName}</h4>
                     <p style="font-size: 0.875rem; color: var(--gray-600); margin-top: var(--space-xs);">Nome comum: ${info.commonName}</p>
                 </div>
                 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-lg); margin-top: var(--space-xl);">
+                <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-lg); margin-top: var(--space-xl);">
                     <div>
                         <p style="font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-xs);">
                             🧬 Família
@@ -305,6 +366,7 @@ export class UIManager {
             </div>
         `;
         
+        infoCard.classList.remove('hidden');
         // Scroll para o card
         infoCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -336,21 +398,45 @@ export class UIManager {
                 distribution: 'Ampla distribuição na América do Sul',
                 description: 'Espécie pequena (15-30mm) com padrão característico de ampulheta no dorso. Vocalização aguda e repetitiva.'
             },
-            'Leptodactylus camaquara': {
-                scientificName: 'Leptodactylus camaquara',
-                commonName: 'Rã-de-Camaquã',
-                family: 'Leptodactylidae',
-                habitat: 'Campos, áreas abertas, pampas',
-                distribution: 'Sul do Brasil, Uruguai e Argentina',
-                description: 'Rã de médio porte com hábitos terrestres e fossoriais. Vocaliza em poças temporárias durante a estação reprodutiva.'
-            },
-            'Leptodactylus cunicularius': {
-                scientificName: 'Leptodactylus cunicularius',
+            'Leptodactylus fuscus': {
+                scientificName: 'Leptodactylus fuscus',
                 commonName: 'Rã-assobiadora',
                 family: 'Leptodactylidae',
-                habitat: 'Florestas, áreas úmidas, próxima a corpos d\'água',
-                distribution: 'Brasil central e sudeste',
-                description: 'Espécie de porte médio a grande, conhecida por sua vocalização característica. Hábitos noturnos e terrestres.'
+                habitat: 'Áreas abertas, campos, bordas de floresta',
+                distribution: 'Ampla distribuição na América do Sul',
+                description: 'Rã de médio porte com hábitos terrestres. Constrói ninhos de espuma em câmaras subterrâneas. Vocalização parece um assobio.'
+            },
+            'Physalaemus cuvieri': {
+                scientificName: 'Physalaemus cuvieri',
+                commonName: 'Rã-cachorro',
+                family: 'Leptodactylidae',
+                habitat: 'Áreas abertas, brejos, poças temporárias',
+                distribution: 'Ampla distribuição no Brasil',
+                description: 'Pequena rã (25-35mm) que constrói ninhos de espuma flutuantes. Sua vocalização é um "uômp" característico.'
+            },
+            'Rhinella ornata': {
+                scientificName: 'Rhinella ornata',
+                commonName: 'Sapo-cururu-da-Mata-Atlântica',
+                family: 'Bufonidae',
+                habitat: 'Florestas úmidas da Mata Atlântica',
+                distribution: 'Sudeste do Brasil',
+                description: 'Sapo de médio porte, terrestre, com glândulas de veneno (parotoides) proeminentes. Vocalização grave e tratorada.'
+            },
+            'Hypsiboas lundii': {
+                scientificName: 'Hypsiboas lundii',
+                commonName: 'Perereca-de-pijama',
+                family: 'Hylidae',
+                habitat: 'Cerrado, campos rupestres, próximo a riachos',
+                distribution: 'Planalto central brasileiro',
+                description: 'Perereca de médio porte com coloração característica. Ativa durante a estação chuvosa.'
+            },
+            'Boana albopunctata': {
+                scientificName: 'Boana albopunctata',
+                commonName: 'Perereca-de-pinta-branca',
+                family: 'Hylidae',
+                habitat: 'Formações abertas, bordas de floresta',
+                distribution: 'Brasil (Cerrado, Mata Atlântica), Argentina, Paraguai',
+                description: 'Perereca de médio porte, vocalização composta por notas curtas e repetidas. Comum em áreas próximas a corpos d\'água.'
             }
         };
         
@@ -365,8 +451,9 @@ export class UIManager {
     }
 }
 
-// Função global para ser chamada pelos botões
-window.showSpeciesInfo = function(speciesName) {
+// Função global para ser chamada pelos botões de informação
+window.handleSpeciesInfoClick = function(speciesName) {
+    // Instanciando temporariamente; idealmente, app.js teria uma instância única
     const uiManager = new UIManager();
     uiManager.showSpeciesInfo(speciesName);
 };
