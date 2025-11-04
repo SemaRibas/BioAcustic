@@ -94,71 +94,105 @@ export class UIManager {
     
     createResultCard(prediction, index) {
         const card = document.createElement('div');
-        card.className = 'result-card bg-white rounded-lg shadow-md p-5 border-l-4';
+        card.className = 'result-card';
         
         // Cor da borda baseada na posição
-        const colors = ['border-green-500', 'border-blue-500', 'border-yellow-500', 
-                       'border-purple-500', 'border-gray-500'];
-        card.classList.add(colors[index] || 'border-gray-500');
+        const borderColors = ['var(--success-500)', 'var(--primary-500)', 'var(--warning-500)', 
+                              'var(--secondary-500)', 'var(--gray-400)'];
+        const borderColor = borderColors[index] || 'var(--gray-400)';
         
         // Ícone baseado na confiança
-        let icon = 'fa-leaf';
-        let iconColor = 'text-green-600';
+        let icon = '🐸';
         
         if (prediction.probability < 0.5) {
-            icon = 'fa-question-circle';
-            iconColor = 'text-gray-500';
+            icon = '❓';
         } else if (prediction.probability < 0.7) {
-            icon = 'fa-check-circle';
-            iconColor = 'text-yellow-600';
+            icon = '✓';
+        } else if (prediction.probability >= 0.95) {
+            icon = '✅';
         }
         
+        // Cor do texto de confiança
+        const confidenceColor = this.getConfidenceColor(prediction.probability);
+        
+        // Cor da barra de progresso
+        const progressBgColor = this.getProgressColor(prediction.probability);
+        
+        card.style.cssText = `
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-lg);
+            border-left: 4px solid ${borderColor};
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-base);
+        `;
+        
         card.innerHTML = `
-            <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center space-x-3">
-                    <i class="fas ${icon} text-2xl ${iconColor}"></i>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md);">
+                <div style="display: flex; align-items: center; gap: var(--space-md);">
+                    <div style="font-size: 2rem; line-height: 1;">${icon}</div>
                     <div>
-                        <h4 class="font-semibold text-lg text-gray-800 italic">${prediction.species}</h4>
-                        ${index === 0 ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Mais Provável</span>' : ''}
+                        <h4 style="font-size: 1.125rem; font-weight: 600; color: var(--gray-900); margin: 0; font-style: italic;">
+                            ${prediction.species}
+                        </h4>
+                        ${index === 0 ? `
+                            <span style="display: inline-block; margin-top: var(--space-xs); font-size: 0.75rem; background: var(--success-100); color: var(--success-800); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-full); font-weight: 600;">
+                                Mais Provável
+                            </span>
+                        ` : ''}
                     </div>
                 </div>
-                <div class="text-right">
-                    <div class="text-3xl font-bold ${this.getConfidenceColor(prediction.probability)}">
+                <div style="text-align: right;">
+                    <div style="font-size: 2rem; font-weight: 700; color: ${confidenceColor}; line-height: 1;">
                         ${prediction.confidence}%
                     </div>
-                    <div class="text-xs text-gray-500">confiança</div>
+                    <div style="font-size: 0.75rem; color: var(--gray-500); margin-top: var(--space-xs);">confiança</div>
                 </div>
             </div>
             
             <!-- Barra de progresso -->
-            <div class="w-full bg-gray-200 rounded-full h-3">
-                <div class="h-3 rounded-full transition-all duration-500 ${this.getProgressColor(prediction.probability)}" 
-                     style="width: ${prediction.confidence}%">
+            <div style="width: 100%; background: var(--gray-200); border-radius: var(--radius-full); height: 12px; overflow: hidden; margin-bottom: var(--space-md);">
+                <div style="height: 100%; border-radius: var(--radius-full); background: ${progressBgColor}; width: ${prediction.confidence}%; transition: width 0.5s ease;">
                 </div>
             </div>
             
-            <!-- Botão de info (opcional) -->
+            <!-- Botão de info -->
             <button 
-                class="mt-3 text-sm text-blue-600 hover:text-blue-800 transition-colors"
-                onclick="showSpeciesInfo('${prediction.species}')"
+                class="species-info-btn"
+                data-species="${prediction.species}"
+                style="background: transparent; border: none; color: var(--primary-600); font-size: 0.875rem; font-weight: 500; cursor: pointer; padding: var(--space-sm) 0; transition: color var(--transition-base); display: flex; align-items: center; gap: var(--space-xs);"
+                onmouseover="this.style.color='var(--primary-700)'"
+                onmouseout="this.style.color='var(--primary-600)'"
             >
-                <i class="fas fa-info-circle mr-1"></i>Ver informações da espécie
+                ℹ️ Ver informações da espécie
             </button>
         `;
+        
+        // Adicionar hover effect
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-4px)';
+            card.style.boxShadow = 'var(--shadow-lg)';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'translateY(0)';
+            card.style.boxShadow = 'var(--shadow-md)';
+        });
         
         return card;
     }
     
     getConfidenceColor(probability) {
-        if (probability >= 0.7) return 'text-green-600';
-        if (probability >= 0.5) return 'text-yellow-600';
-        return 'text-gray-600';
+        if (probability >= 0.7) return 'var(--success-600)';
+        if (probability >= 0.5) return 'var(--warning-600)';
+        return 'var(--gray-600)';
     }
     
     getProgressColor(probability) {
-        if (probability >= 0.7) return 'bg-green-500';
-        if (probability >= 0.5) return 'bg-yellow-500';
-        return 'bg-gray-500';
+        if (probability >= 0.7) return 'linear-gradient(90deg, var(--success-500), var(--success-400))';
+        if (probability >= 0.5) return 'linear-gradient(90deg, var(--warning-500), var(--warning-400))';
+        return 'var(--gray-500)';
     }
     
     drawSpectrogram(melSpec) {
@@ -233,40 +267,40 @@ export class UIManager {
         const info = this.getSpeciesInfo(speciesName);
         
         infoContent.innerHTML = `
-            <div class="space-y-3">
-                <div>
-                    <h4 class="font-semibold text-lg text-gray-800 italic">${info.scientificName}</h4>
-                    <p class="text-sm text-gray-600">Nome comum: ${info.commonName}</p>
+            <div>
+                <div style="margin-bottom: var(--space-lg);">
+                    <h4 style="font-size: 1.125rem; font-weight: 600; color: var(--gray-900); font-style: italic; margin: 0;">${info.scientificName}</h4>
+                    <p style="font-size: 0.875rem; color: var(--gray-600); margin-top: var(--space-xs);">Nome comum: ${info.commonName}</p>
                 </div>
                 
-                <div class="grid md:grid-cols-2 gap-4 mt-4">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-lg); margin-top: var(--space-xl);">
                     <div>
-                        <p class="text-sm font-semibold text-gray-700">
-                            <i class="fas fa-layer-group mr-2 text-blue-500"></i>Família
+                        <p style="font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-xs);">
+                            🧬 Família
                         </p>
-                        <p class="text-sm text-gray-600">${info.family}</p>
+                        <p style="font-size: 0.875rem; color: var(--gray-600);">${info.family}</p>
                     </div>
                     
                     <div>
-                        <p class="text-sm font-semibold text-gray-700">
-                            <i class="fas fa-map-marker-alt mr-2 text-blue-500"></i>Distribuição
+                        <p style="font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-xs);">
+                            📍 Distribuição
                         </p>
-                        <p class="text-sm text-gray-600">${info.distribution}</p>
+                        <p style="font-size: 0.875rem; color: var(--gray-600);">${info.distribution}</p>
                     </div>
                 </div>
                 
-                <div class="mt-4">
-                    <p class="text-sm font-semibold text-gray-700">
-                        <i class="fas fa-tree mr-2 text-green-500"></i>Habitat
+                <div style="margin-top: var(--space-xl);">
+                    <p style="font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-xs);">
+                        🌳 Habitat
                     </p>
-                    <p class="text-sm text-gray-600">${info.habitat}</p>
+                    <p style="font-size: 0.875rem; color: var(--gray-600);">${info.habitat}</p>
                 </div>
                 
-                <div class="mt-4">
-                    <p class="text-sm font-semibold text-gray-700">
-                        <i class="fas fa-info-circle mr-2 text-purple-500"></i>Descrição
+                <div style="margin-top: var(--space-xl);">
+                    <p style="font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-xs);">
+                        ℹ️ Descrição
                     </p>
-                    <p class="text-sm text-gray-600">${info.description}</p>
+                    <p style="font-size: 0.875rem; color: var(--gray-600);">${info.description}</p>
                 </div>
             </div>
         `;
@@ -301,6 +335,22 @@ export class UIManager {
                 habitat: 'Áreas abertas, brejos, bordas de mata',
                 distribution: 'Ampla distribuição na América do Sul',
                 description: 'Espécie pequena (15-30mm) com padrão característico de ampulheta no dorso. Vocalização aguda e repetitiva.'
+            },
+            'Leptodactylus camaquara': {
+                scientificName: 'Leptodactylus camaquara',
+                commonName: 'Rã-de-Camaquã',
+                family: 'Leptodactylidae',
+                habitat: 'Campos, áreas abertas, pampas',
+                distribution: 'Sul do Brasil, Uruguai e Argentina',
+                description: 'Rã de médio porte com hábitos terrestres e fossoriais. Vocaliza em poças temporárias durante a estação reprodutiva.'
+            },
+            'Leptodactylus cunicularius': {
+                scientificName: 'Leptodactylus cunicularius',
+                commonName: 'Rã-assobiadora',
+                family: 'Leptodactylidae',
+                habitat: 'Florestas, áreas úmidas, próxima a corpos d\'água',
+                distribution: 'Brasil central e sudeste',
+                description: 'Espécie de porte médio a grande, conhecida por sua vocalização característica. Hábitos noturnos e terrestres.'
             }
         };
         
