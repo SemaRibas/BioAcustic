@@ -6,14 +6,41 @@
  * - Substituído `showAlert` por `showNotification`
  * - Sistema de notificação agora cria "toasts" dinâmicos
  * que aparecem e desaparecem com animação.
+ * - Integração com IndexedDB para buscar espécies cadastradas
  */
+
+import { storageManager } from './storage.js';
 
 export class UIManager {
     
     constructor() {
         this.resultsVisible = false;
         this.notificationContainer = null;
+        this.speciesCache = new Map(); // Cache de espécies
         this.initNotificationContainer();
+        this.loadSpeciesCache();
+    }
+
+    /**
+     * Carrega todas as espécies cadastradas no cache
+     */
+    async loadSpeciesCache() {
+        try {
+            const allSpecies = await storageManager.getAllSpecies();
+            allSpecies.forEach(species => {
+                this.speciesCache.set(species.scientificName.toLowerCase(), species);
+            });
+            console.log(`✅ ${allSpecies.length} espécies carregadas no cache`);
+        } catch (error) {
+            console.error('Erro ao carregar cache de espécies:', error);
+        }
+    }
+
+    /**
+     * Busca informações de uma espécie no cache
+     */
+    getSpeciesInfo(scientificName) {
+        return this.speciesCache.get(scientificName.toLowerCase());
     }
     
     /**
@@ -147,9 +174,11 @@ export class UIManager {
     
     createResultCard(prediction, index) {
         const card = document.createElement('div');
-        // Adicionando 'fade-in' para animação de entrada
         card.className = 'result-card fade-in';
         card.style.animationDelay = `${index * 100}ms`;
+        
+        // Buscar informações da espécie cadastrada
+        const speciesInfo = this.getSpeciesInfo(prediction.species);
         
         // Cor da borda baseada na posição
         const borderColors = ['var(--primary-500)', 'var(--secondary-500)', 'var(--warning)', 
@@ -185,6 +214,59 @@ export class UIManager {
             animation-delay: ${index * 100}ms;
             opacity: 0;
         `;
+
+        // Informações extras se espécie estiver cadastrada
+        let extraInfo = '';
+        if (speciesInfo) {
+            extraInfo = `
+                <div style="background: linear-gradient(to right, #d1fae5, #ccfbf1); border-radius: var(--radius-lg); padding: var(--space-md); margin-top: var(--space-md); border: 1px solid #a7f3d0;">
+                    <div style="display: flex; align-items-start; gap: var(--space-md);">
+                        ${speciesInfo.imageUrl ? 
+                            `<img src="${speciesInfo.imageUrl}" alt="${speciesInfo.scientificName}" style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-md); flex-shrink: 0;" onerror="this.style.display='none'">` : 
+                            `<div style="width: 80px; height: 80px; background: linear-gradient(135deg, #10b981, #14b8a6); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; flex-shrink: 0;">🐸</div>`
+                        }
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 0.875rem; font-weight: 600; color: #047857; margin-bottom: var(--space-xs);">
+                                ✓ Espécie Cadastrada
+                            </div>
+                            ${speciesInfo.commonName ? 
+                                `<div style="font-size: 0.875rem; color: #065f46; margin-bottom: var(--space-xs);">
+                                    <strong>Nome Comum:</strong> ${speciesInfo.commonName}
+                                </div>` : ''
+                            }
+                            ${speciesInfo.taxonomy?.family ? 
+                                `<div style="font-size: 0.875rem; color: #065f46; margin-bottom: var(--space-xs);">
+                                    <strong>Família:</strong> ${speciesInfo.taxonomy.family}
+                                </div>` : ''
+                            }
+                            ${speciesInfo.conservation ? 
+                                `<div style="font-size: 0.875rem; color: #065f46; margin-bottom: var(--space-xs);">
+                                    <strong>Status de Conservação:</strong> ${speciesInfo.conservation}
+                                </div>` : ''
+                            }
+                            ${speciesInfo.audioCount > 0 ? 
+                                `<div style="font-size: 0.875rem; color: #065f46;">
+                                    <strong>Áudios cadastrados:</strong> ${speciesInfo.audioCount}
+                                </div>` : ''
+                            }
+                        </div>
+                    </div>
+                    ${speciesInfo.description ? 
+                        `<div style="margin-top: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid #a7f3d0; font-size: 0.813rem; color: #065f46; line-height: 1.5;">
+                            ${speciesInfo.description}
+                        </div>` : ''
+                    }
+                </div>
+            `;
+        } else {
+            extraInfo = `
+                <div style="background: #fef3c7; border-radius: var(--radius-lg); padding: var(--space-sm); margin-top: var(--space-md); border: 1px solid #fde68a;">
+                    <div style="font-size: 0.813rem; color: #92400e;">
+                        ⚠️ Espécie não cadastrada no sistema. <a href="species.html" style="color: #b45309; text-decoration: underline; font-weight: 600;">Cadastrar agora</a>
+                    </div>
+                </div>
+            `;
+        }
         
         card.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md);">
@@ -214,16 +296,8 @@ export class UIManager {
                 <div class="progress-bar" style="height: 100%; background: ${progressBgColor}; width: ${prediction.confidence}%; transition: width 0.5s ease 0.3s;">
                 </div>
             </div>
-            
-            <!-- Botão de info -->
-            <button 
-                class="species-info-btn btn btn-ghost btn-sm"
-                data-species="${prediction.species}"
-                style="color: var(--primary-600); padding-left: 0;"
-                onclick="window.handleSpeciesInfoClick('${prediction.species}')"
-            >
-                ℹ️ Ver informações da espécie
-            </button>
+
+            ${extraInfo}
         `;
         
         // Adicionar hover effect
