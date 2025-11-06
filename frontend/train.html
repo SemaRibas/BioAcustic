@@ -243,10 +243,10 @@
                             1. Upload de Áudios
                         </h2>
                         
-                        <!-- Input de Espécie -->
+                        <!-- Seletor de Espécie -->
                         <div class="mb-4">
-                            <label for="speciesNameInput" class="block text-sm font-semibold text-slate-700 mb-2">
-                                🏷️ Nome da Espécie
+                            <label for="speciesSelect" class="block text-sm font-semibold text-slate-700 mb-2">
+                                🏷️ Selecione a Espécie
                             </label>
                             <div class="relative">
                                 <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
@@ -255,11 +255,26 @@
                                         <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" stroke-width="0"/>
                                     </svg>
                                 </div>
-                                <input type="text" id="speciesNameInput" placeholder="Ex: Boana faber, Scinax fuscomarginatus..." class="block w-full rounded-xl border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-slate-900 shadow-sm transition-all duration-300 placeholder:text-slate-400 focus:border-training-500 focus:bg-white focus:ring-2 focus:ring-training-500 focus:ring-offset-2">
+                                <select id="speciesSelect" class="block w-full rounded-xl border-slate-200 bg-slate-50 py-3 pl-12 pr-10 text-slate-900 shadow-sm transition-all duration-300 focus:border-training-500 focus:bg-white focus:ring-2 focus:ring-training-500 focus:ring-offset-2 appearance-none">
+                                    <option value="">Carregando espécies...</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+                                    <svg class="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
                             </div>
-                            <p class="text-xs text-slate-500 mt-1 pl-1">
-                                Digite o nome científico ou comum da espécie.
-                            </p>
+                            <div class="flex items-center justify-between mt-1 pl-1">
+                                <p class="text-xs text-slate-500">
+                                    Escolha uma espécie cadastrada ou <a href="species.html" class="text-training-600 hover:text-training-700 font-semibold underline">cadastre uma nova</a>.
+                                </p>
+                                <button id="refreshSpeciesBtn" class="text-xs text-training-600 hover:text-training-700 font-semibold flex items-center gap-1 transition-colors" title="Recarregar lista de espécies">
+                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    Atualizar
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Upload de Arquivos -->
@@ -436,13 +451,12 @@
         // Importando os módulos
         import { AudioProcessor } from './js/audio.js';
         import { BrowserTrainer } from './js/trainer.js';
-        // IMPORTADO: UIManager para notificações unificadas
         import { UIManager } from './js/ui.js';
+        import { storageManager } from './js/storage.js';
 
         // Inicializar
         const audioProcessor = new AudioProcessor();
         const trainer = new BrowserTrainer();
-        // INICIALIZADO: UIManager
         const uiManager = new UIManager();
         
         let uploadedFiles = [];
@@ -450,9 +464,9 @@
         console.log('✅ AudioProcessor inicializado');
         console.log('✅ BrowserTrainer inicializado');
         console.log('✅ UIManager inicializado');
+        console.log('✅ StorageManager inicializado');
 
         // Elementos DOM
-        const speciesNameInput = document.getElementById('speciesNameInput');
         const audioFiles = document.getElementById('audioFiles');
         const dropZone = document.getElementById('dropZone');
         const addExamplesBtn = document.getElementById('addExamplesBtn');
@@ -540,9 +554,53 @@
             `).join('');
         }
         
-        speciesNameInput.addEventListener('input', () => {
-             addExamplesBtn.disabled = (speciesNameInput.value.trim() === '' || selectedFiles.length === 0);
+        // Carregar espécies do IndexedDB
+        async function loadSpeciesList() {
+            const speciesSelect = document.getElementById('speciesSelect');
+            const refreshBtn = document.getElementById('refreshSpeciesBtn');
+            
+            try {
+                refreshBtn.disabled = true;
+                speciesSelect.innerHTML = '<option value="">Carregando...</option>';
+                
+                const allSpecies = await storageManager.getAllSpecies();
+                
+                if (allSpecies.length === 0) {
+                    speciesSelect.innerHTML = '<option value="">Nenhuma espécie cadastrada</option>';
+                    uiManager.showNotification('Nenhuma espécie encontrada. Cadastre espécies primeiro!', 'warning');
+                } else {
+                    speciesSelect.innerHTML = `
+                        <option value="">-- Selecione uma espécie --</option>
+                        ${allSpecies.map(species => `
+                            <option value="${species.id}">
+                                ${species.scientificName}${species.commonName ? ` (${species.commonName})` : ''} - ${species.audioCount || 0} áudios
+                            </option>
+                        `).join('')}
+                    `;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar espécies:', error);
+                speciesSelect.innerHTML = '<option value="">Erro ao carregar espécies</option>';
+                uiManager.showNotification('Erro ao carregar lista de espécies!', 'error');
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        // Event listeners para seletor de espécie
+        const speciesSelect = document.getElementById('speciesSelect');
+        const refreshSpeciesBtn = document.getElementById('refreshSpeciesBtn');
+
+        speciesSelect.addEventListener('change', () => {
+            addExamplesBtn.disabled = (speciesSelect.value === '' || selectedFiles.length === 0);
         });
+
+        refreshSpeciesBtn.addEventListener('click', () => {
+            loadSpeciesList();
+        });
+
+        // Carregar espécies ao iniciar
+        loadSpeciesList();
 
         // Funções globais para manipular réplicas
         window.updateReplicas = (index, value) => {
@@ -611,19 +669,27 @@
 
         // Adicionar exemplos (com réplicas)
         addExamplesBtn.addEventListener('click', async () => {
-            const speciesName = speciesNameInput.value.trim();
+            const speciesSelect = document.getElementById('speciesSelect');
+            const selectedSpeciesId = speciesSelect.value;
             
-            if (!speciesName) {
-                // ATUALIZADO: Usando uiManager.showNotification
-                uiManager.showNotification('Digite o nome da espécie!', 'error');
+            if (!selectedSpeciesId) {
+                uiManager.showNotification('Selecione uma espécie!', 'error');
                 return;
             }
             
             if (selectedFiles.length === 0) {
-                // ATUALIZADO: Usando uiManager.showNotification
                 uiManager.showNotification('Selecione arquivos de áudio!', 'error');
                 return;
             }
+
+            // Obter dados completos da espécie selecionada
+            const selectedSpecies = await storageManager.getSpecies(parseInt(selectedSpeciesId));
+            if (!selectedSpecies) {
+                uiManager.showNotification('Erro ao carregar dados da espécie!', 'error');
+                return;
+            }
+
+            const speciesName = selectedSpecies.scientificName;
 
             addExamplesBtn.disabled = true;
             addExamplesBtn.querySelector('span').innerHTML = '⏳ Processando...';
@@ -682,6 +748,34 @@
                 }
 
                 if (successCount > 0) {
+                    // Salvar áudios no IndexedDB vinculados à espécie
+                    for (const fileData of selectedFiles) {
+                        try {
+                            const audioData = {
+                                speciesId: selectedSpecies.id,
+                                timestamp: Date.now(),
+                                blob: fileData.file,
+                                metadata: {
+                                    filename: fileData.file.name,
+                                    size: fileData.file.size,
+                                    type: fileData.file.type,
+                                    replicas: fileData.replicas,
+                                    duration: fileData.duration || null
+                                }
+                            };
+                            
+                            await storageManager.addAudio(audioData);
+                        } catch (audioError) {
+                            console.error(`Erro ao salvar áudio ${fileData.file.name}:`, audioError);
+                        }
+                    }
+
+                    // Atualizar contador de áudios da espécie
+                    const audioCount = await storageManager.getAudiosBySpecies(selectedSpecies.id);
+                    await storageManager.updateSpecies(selectedSpecies.id, {
+                        audioCount: audioCount.length
+                    });
+
                     uiManager.showNotification(`✅ ${successCount} exemplos adicionados para ${speciesName}`, 'success');
                     
                     // Limpar arquivos selecionados
@@ -1437,7 +1531,7 @@ ${trainer.classNames.map((name, i) => `${i + 1}. ${name}`).join('\n')}
         
         console.log('🎓 Módulo de treinamento inicializado');
         console.log('📋 Para testar:');
-        console.log('   1. Digite nome da espécie');
+        console.log('   1. Selecione uma espécie cadastrada');
         console.log('   2. Selecione 5+ arquivos de áudio');
         console.log('   3. Clique "Adicionar Exemplos"');
         console.log('   4. Repita para outra espécie');
