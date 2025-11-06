@@ -138,6 +138,21 @@ class StorageManager {
     }
 
     /**
+     * Obter espécie por ID
+     */
+    async getSpecies(id) {
+        await this.ensureDB();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['species'], 'readonly');
+            const store = transaction.objectStore('species');
+            const request = store.get(id);
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    /**
      * Buscar espécie por nome científico
      */
     async getSpeciesByScientificName(name) {

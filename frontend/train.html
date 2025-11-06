@@ -478,15 +478,16 @@
         const trainBtnContainer = document.getElementById('trainBtnContainer');
         const trainModelBtn = document.getElementById('trainModelBtn');
         const trainingPanel = document.getElementById('trainingPanel');
-        const saveModelBtn = document.getElementById('saveModelBtn');
-        const testModelBtn = document.getElementById('testModelBtn');
-        const deleteModelBtn = document.getElementById('deleteModelBtn');
-        const clearDataBtn = document.getElementById('clearDataBtn');
-        const exportModelBtn = document.getElementById('exportModelBtn');
-        const exportFirebaseBtn = document.getElementById('exportFirebaseBtn');
-        const importModelBtn = document.getElementById('importModelBtn');
-        const mergeModelsBtn = document.getElementById('mergeModelsBtn');
-        const modelInfo = document.getElementById('modelInfo');
+        // Elementos removidos (agora estão em settings.html):
+        // const saveModelBtn = document.getElementById('saveModelBtn');
+        // const testModelBtn = document.getElementById('testModelBtn');
+        // const deleteModelBtn = document.getElementById('deleteModelBtn');
+        // const clearDataBtn = document.getElementById('clearDataBtn');
+        // const exportModelBtn = document.getElementById('exportModelBtn');
+        // const exportFirebaseBtn = document.getElementById('exportFirebaseBtn');
+        // const importModelBtn = document.getElementById('importModelBtn');
+        // const mergeModelsBtn = document.getElementById('mergeModelsBtn');
+        // const modelInfo = document.getElementById('modelInfo');
         
         // Seletores do Overlay de Loading
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -1028,15 +1029,20 @@
             }
         });
 
+        // REMOVIDO: Event listeners dos botões que agora estão em settings.html
+        // Os seguintes botões foram movidos para a página de configurações:
+        // - saveModelBtn, testModelBtn, deleteModelBtn
+        // - clearDataBtn, exportModelBtn, exportFirebaseBtn
+        // - importModelBtn, mergeModelsBtn
+
+        /* CÓDIGO REMOVIDO - AGORA EM SETTINGS.HTML
         // Salvar modelo
         saveModelBtn.addEventListener('click', async () => {
             try {
                 await trainer.saveModel();
-                // ATUALIZADO: Usando uiManager.showNotification
                 uiManager.showNotification('✅ Modelo salvo no navegador!', 'success');
                 updateModelInfo();
             } catch (error) {
-                // ATUALIZADO: Usando uiManager.showNotification
                 uiManager.showNotification('Erro ao salvar: ' + error.message, 'error');
             }
         });
@@ -1049,6 +1055,10 @@
             }, 500);
         });
 
+        */
+        
+        /* CONTINUAÇÃO - Todos esses event listeners foram movidos para settings.html
+        
         // Deletar modelo
         deleteModelBtn.addEventListener('click', async () => {
             if (confirm('Tem certeza que deseja deletar o modelo treinado?')) {
@@ -1056,7 +1066,6 @@
                 saveModelBtn.disabled = true;
                 testModelBtn.disabled = true;
                 updateModelInfo();
-                // ATUALIZADO: Usando uiManager.showNotification
                 uiManager.showNotification('Modelo deletado', 'success');
             }
         });
@@ -1066,7 +1075,6 @@
             if (confirm('Tem certeza que deseja limpar todos os dados de treinamento?')) {
                 trainer.clearTrainingData();
                 updateDatasetStats();
-                // ATUALIZADO: Usando uiManager.showNotification
                 uiManager.showNotification('Dados limpos', 'success');
             }
         });
@@ -1426,6 +1434,8 @@ ${trainer.classNames.map((name, i) => `${i + 1}. ${name}`).join('\n')}
             };
             input.click();
         });
+        
+        FIM DO BLOCO COMENTADO - Todos os event listeners acima foram movidos para settings.html */
 
         // Funções auxiliares
         function loadAudioFile(file) {
@@ -1489,58 +1499,15 @@ ${trainer.classNames.map((name, i) => `${i + 1}. ${name}`).join('\n')}
             trainBtnContainer.classList.toggle('hidden', !trainer.canTrain());
         }
 
+        // FUNÇÃO REMOVIDA - updateModelInfo agora está em settings.html
+        // A visualização e gerenciamento do modelo foi centralizada na página de configurações
+        
+        /* CÓDIGO REMOVIDO - AGORA EM SETTINGS.HTML
         async function updateModelInfo() {
-            try {
-                const metadata = await trainer.loadModel();
-                
-                if (metadata && metadata.classNames) {
-                    modelInfo.innerHTML = `
-                        <div class="bg-primary-50 border border-primary-200 rounded-lg p-3 mb-3 text-center">
-                            <p class="text-sm font-bold text-primary-700">✅ Modelo Carregado</p>
-                        </div>
-                        <div class="space-y-1 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-slate-600">Classes:</span>
-                                <span class="font-semibold">${metadata.numClasses}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-600">Treinado em:</span>
-                                <span class="font-semibold text-xs">${new Date(metadata.trainedAt).toLocaleString('pt-BR')}</span>
-                            </div>
-                            <div class="pt-2 mt-2 border-t border-slate-200">
-                                <p class="text-xs text-slate-500 mb-1">Espécies:</p>
-                                <div class="flex flex-wrap gap-1">
-                                    ${metadata.classNames.map(name => 
-                                        `<span class="text-xs font-medium bg-primary-100 text-primary-800 px-2 py-0.5 rounded-full">${name}</span>`
-                                    ).join('')}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    saveModelBtn.disabled = false;
-                    testModelBtn.disabled = false;
-                    exportModelBtn.disabled = false;
-                    exportFirebaseBtn.disabled = false;
-                    
-                    uiManager.showNotification('✅ Modelo encontrado e carregado!', 'success');
-                } else {
-                    modelInfo.innerHTML = `
-                        <div class="text-center text-slate-500 py-4">
-                            <p class="text-sm font-semibold">Nenhum modelo salvo</p>
-                        </div>`;
-                    saveModelBtn.disabled = true;
-                    testModelBtn.disabled = true;
-                    exportModelBtn.disabled = true;
-                    exportFirebaseBtn.disabled = true;
-                }
-            } catch (error) {
-                console.error('❌ Erro ao carregar modelo:', error);
-                modelInfo.innerHTML = `<div class="text-center text-danger-500 py-4"><p class="text-sm font-semibold">⚠️ Erro ao carregar modelo</p></div>`;
-            }
+            // ... código movido para settings.html ...
         }
-
-        // Carregar modelo ao iniciar
         updateModelInfo();
+        */
         
         console.log('🎓 Módulo de treinamento inicializado');
         console.log('📋 Para testar:');
