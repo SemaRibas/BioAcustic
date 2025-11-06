@@ -9,7 +9,7 @@
  * - Integração com IndexedDB para buscar espécies cadastradas
  */
 
-import { storageManager } from './storage.js';
+import { storage } from './storage.js';
 
 export class UIManager {
     
@@ -26,7 +26,7 @@ export class UIManager {
      */
     async loadSpeciesCache() {
         try {
-            const allSpecies = await storageManager.getAllSpecies();
+            const allSpecies = await storage.getAllSpecies();
             allSpecies.forEach(species => {
                 this.speciesCache.set(species.scientificName.toLowerCase(), species);
             });

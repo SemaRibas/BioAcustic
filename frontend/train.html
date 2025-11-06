@@ -452,7 +452,7 @@
         import { AudioProcessor } from './js/audio.js';
         import { BrowserTrainer } from './js/trainer.js';
         import { UIManager } from './js/ui.js';
-        import { storageManager } from './js/storage.js';
+        import { storage } from './js/storage.js';
 
         // Inicializar
         const audioProcessor = new AudioProcessor();
@@ -563,7 +563,7 @@
                 refreshBtn.disabled = true;
                 speciesSelect.innerHTML = '<option value="">Carregando...</option>';
                 
-                const allSpecies = await storageManager.getAllSpecies();
+                const allSpecies = await storage.getAllSpecies();
                 
                 if (allSpecies.length === 0) {
                     speciesSelect.innerHTML = '<option value="">Nenhuma espécie cadastrada</option>';
@@ -683,7 +683,7 @@
             }
 
             // Obter dados completos da espécie selecionada
-            const selectedSpecies = await storageManager.getSpecies(parseInt(selectedSpeciesId));
+            const selectedSpecies = await storage.getSpecies(parseInt(selectedSpeciesId));
             if (!selectedSpecies) {
                 uiManager.showNotification('Erro ao carregar dados da espécie!', 'error');
                 return;
@@ -764,15 +764,15 @@
                                 }
                             };
                             
-                            await storageManager.addAudio(audioData);
+                            await storage.addAudio(audioData);
                         } catch (audioError) {
                             console.error(`Erro ao salvar áudio ${fileData.file.name}:`, audioError);
                         }
                     }
 
                     // Atualizar contador de áudios da espécie
-                    const audioCount = await storageManager.getAudiosBySpecies(selectedSpecies.id);
-                    await storageManager.updateSpecies(selectedSpecies.id, {
+                    const audioCount = await storage.getAudiosBySpecies(selectedSpecies.id);
+                    await storage.updateSpecies(selectedSpecies.id, {
                         audioCount: audioCount.length
                     });
 
