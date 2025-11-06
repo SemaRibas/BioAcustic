@@ -559,11 +559,15 @@
             const speciesSelect = document.getElementById('speciesSelect');
             const refreshBtn = document.getElementById('refreshSpeciesBtn');
             
+            console.log('🔍 Iniciando carregamento de espécies...');
+            
             try {
                 refreshBtn.disabled = true;
                 speciesSelect.innerHTML = '<option value="">Carregando...</option>';
                 
+                console.log('📊 Buscando espécies do IndexedDB...');
                 const allSpecies = await storage.getAllSpecies();
+                console.log(`✅ ${allSpecies.length} espécie(s) encontrada(s):`, allSpecies);
                 
                 if (allSpecies.length === 0) {
                     speciesSelect.innerHTML = '<option value="">Nenhuma espécie cadastrada</option>';
@@ -577,9 +581,10 @@
                             </option>
                         `).join('')}
                     `;
+                    console.log('✅ Dropdown de espécies atualizado com sucesso');
                 }
             } catch (error) {
-                console.error('Erro ao carregar espécies:', error);
+                console.error('❌ Erro ao carregar espécies:', error);
                 speciesSelect.innerHTML = '<option value="">Erro ao carregar espécies</option>';
                 uiManager.showNotification('Erro ao carregar lista de espécies!', 'error');
             } finally {
@@ -599,8 +604,16 @@
             loadSpeciesList();
         });
 
-        // Carregar espécies ao iniciar
-        loadSpeciesList();
+        // Carregar espécies ao iniciar (async para aguardar DB)
+        (async () => {
+            try {
+                await loadSpeciesList();
+            } catch (error) {
+                console.error('Erro ao inicializar seletor de espécies:', error);
+                speciesSelect.innerHTML = '<option value="">Erro ao inicializar</option>';
+                uiManager.showNotification('Erro ao carregar espécies. Verifique o console.', 'error');
+            }
+        })();
 
         // Funções globais para manipular réplicas
         window.updateReplicas = (index, value) => {
