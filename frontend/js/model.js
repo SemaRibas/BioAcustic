@@ -131,6 +131,11 @@ export class ModelManager {
         console.log('🧠 Executando predição...');
         console.log('   Input shape:', inputTensor.shape);
         
+        // Log dos primeiros valores do tensor para debug
+        const inputData = await inputTensor.data();
+        console.log('   Primeiros 10 valores do input:', Array.from(inputData.slice(0, 10)));
+        console.log('   Soma total:', inputData.reduce((a, b) => a + b, 0));
+        
         const startTime = performance.now();
         
         // Fazer predição
@@ -143,6 +148,8 @@ export class ModelManager {
         const inferenceTime = endTime - startTime;
         
         console.log(`✅ Predição concluída em ${inferenceTime.toFixed(2)} ms`);
+        console.log('   Probabilidades:', Array.from(probabilities));
+        console.log('   Soma de probabilidades:', probabilities.reduce((a, b) => a + b, 0));
         
         // Limpar
         predictions.dispose();

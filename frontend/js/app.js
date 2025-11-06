@@ -247,9 +247,17 @@ class BioAcusticApp {
         }
         
         console.log('🧠 Iniciando análise...');
+        console.log('   Duração do áudio:', this.currentAudioBuffer.duration, 's');
+        console.log('   Taxa de amostragem:', this.currentAudioBuffer.sampleRate, 'Hz');
         
         // Mostrar animação de processamento
         this.uiManager.showProcessing(true);
+        
+        // Limpar memória de análises anteriores
+        if (typeof tf !== 'undefined') {
+            const memBefore = tf.memory();
+            console.log('💾 Memória GPU antes:', memBefore.numTensors, 'tensores');
+        }
         
         try {
             // 1. Pré-processar áudio (gerar espectrograma)
@@ -258,17 +266,25 @@ class BioAcusticApp {
                 this.currentAudioBuffer
             );
             
+            console.log('📊 Espectrograma shape:', melSpectrogram.length, 'x', melSpectrogram[0]?.length);
+            
             // 2. Preparar tensor de input
             this.uiManager.updateProgress(50, 'Preparando tensor...');
             const inputTensor = this.prepareInputTensor(melSpectrogram);
+            
+            console.log('🔢 Tensor shape:', inputTensor.shape);
             
             // 3. Fazer predição
             this.uiManager.updateProgress(70, 'Executando inferência...');
             const predictions = await this.modelManager.predict(inputTensor);
             
+            console.log('🎯 Predições brutas:', predictions.slice(0, 5));
+            
             // 4. Processar resultados
             this.uiManager.updateProgress(90, 'Processando resultados...');
             const results = this.modelManager.getTopPredictions(predictions, 5);
+            
+            console.log('📋 Top 5 resultados:', results.map(r => `${r.species}: ${r.confidence}%`));
             
             // 5. Exibir resultados
             this.uiManager.updateProgress(100, 'Concluído!');
@@ -277,10 +293,17 @@ class BioAcusticApp {
             // 6. Visualizar espectrograma
             this.uiManager.drawSpectrogram(melSpectrogram);
             
-            // Limpar
+            // Limpar tensores
             inputTensor.dispose();
             
-            console.log('✅ Análise concluída', results);
+            // Forçar limpeza de memória
+            if (typeof tf !== 'undefined') {
+                await tf.nextFrame();
+                const memAfter = tf.memory();
+                console.log('💾 Memória GPU depois:', memAfter.numTensors, 'tensores');
+            }
+            
+            console.log('✅ Análise concluída', results[0]);
             
             // O showProcessing(false) agora tem um delay embutido
             this.uiManager.showProcessing(false);
