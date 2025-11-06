@@ -989,9 +989,11 @@
                 });
                 
                 uiManager.showNotification('✅ Treinamento concluído!', 'success');
-                saveModelBtn.disabled = false;
-                exportModelBtn.disabled = false;
-                exportFirebaseBtn.disabled = false;
+                
+                // Botões de ação foram movidos para settings.html
+                // saveModelBtn.disabled = false;
+                // exportModelBtn.disabled = false;
+                // exportFirebaseBtn.disabled = false;
                 
                 // Aguardar um momento para garantir estabilidade antes de salvar
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -999,15 +1001,13 @@
                 // Salvar automaticamente após treinamento
                 try {
                     await trainer.saveModel();
-                    // ATUALIZADO: Usando uiManager.showNotification
-                    uiManager.showNotification('💾 Modelo salvo automaticamente!', 'success');
+                    uiManager.showNotification('💾 Modelo salvo automaticamente! Acesse a página de Configurações para gerenciar.', 'success', 5000);
                 } catch (saveError) {
                     console.error('Erro ao salvar modelo:', saveError);
-                    // ATUALIZADO: Usando uiManager.showNotification
-                    uiManager.showNotification('⚠️ Modelo treinado mas não foi possível salvar. Use o botão "Salvar Modelo".', 'warning');
+                    uiManager.showNotification('⚠️ Modelo treinado mas não foi possível salvar automaticamente. Acesse Configurações para salvar manualmente.', 'warning', 6000);
                 }
                 
-                updateModelInfo();
+                // updateModelInfo(); // Função movida para settings.html
 
             } catch (error) {
                 console.error('Erro no treinamento:', error);
