@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioAcustic - Configurações</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐸</text></svg>">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: tailwind.colors.emerald,
+                        secondary: tailwind.colors.teal,
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <!-- Navbar Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Page Header -->
+    <header class="bg-gradient-to-br from-emerald-50 to-teal-50 border-b border-emerald-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex items-center gap-3">
+                <div class="text-5xl">⚙️</div>
+                <div>
+                    <h1 class="text-3xl font-black text-gray-800">Configurações</h1>
+                    <p class="text-gray-600">Personalize o sistema e gerencie seus dados</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Model Settings -->
+        <section class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Configurações do Modelo</h2>
+                    <p class="text-sm text-gray-600">Ajuste parâmetros de treinamento e análise</p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Threshold -->
+                <div>
+                    <label class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-bold text-gray-700">Threshold de Confiança</span>
+                        <span id="thresholdValue" class="text-emerald-600 font-bold">0.70</span>
+                    </label>
+                    <input type="range" id="threshold" min="0" max="1" step="0.01" value="0.70" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                    <p class="text-xs text-gray-500 mt-1">Confiança mínima para aceitar previsões</p>
+                </div>
+
+                <!-- Batch Size -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Batch Size</label>
+                    <select id="batchSize" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all">
+                        <option value="16">16</option>
+                        <option value="32" selected>32</option>
+                        <option value="64">64</option>
+                        <option value="128">128</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Número de amostras processadas por vez</p>
+                </div>
+
+                <!-- Epochs -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Número de Épocas</label>
+                    <input type="number" id="epochs" min="1" max="200" value="50" 
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all">
+                    <p class="text-xs text-gray-500 mt-1">Iterações completas sobre o dataset de treinamento</p>
+                </div>
+            </div>
+
+            <button id="saveModelSettings" class="mt-6 w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
+                Salvar Configurações do Modelo
+            </button>
+        </section>
+
+        <!-- Data Management -->
+        <section class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Gerenciamento de Dados</h2>
+                    <p class="text-sm text-gray-600">Exportar, importar e limpar seus dados</p>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-4">
+                <!-- Export Data -->
+                <button id="exportAllData" class="p-6 border-2 border-gray-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition-all group">
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-14 h-14 bg-emerald-100 group-hover:bg-emerald-600 rounded-xl flex items-center justify-center transition-colors">
+                            <svg class="w-7 h-7 text-emerald-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                            </svg>
+                        </div>
+                        <h3 class="font-bold text-gray-800">Exportar Todos os Dados</h3>
+                        <p class="text-sm text-gray-600 text-center">Backup completo em JSON</p>
+                    </div>
+                </button>
+
+                <!-- Import Data -->
+                <button id="importAllData" class="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group">
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-14 h-14 bg-blue-100 group-hover:bg-blue-600 rounded-xl flex items-center justify-center transition-colors">
+                            <svg class="w-7 h-7 text-blue-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                        </div>
+                        <h3 class="font-bold text-gray-800">Importar Dados</h3>
+                        <p class="text-sm text-gray-600 text-center">Restaurar de backup JSON</p>
+                    </div>
+                </button>
+
+                <!-- Export CSV -->
+                <button id="exportCSV" class="p-6 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all group">
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-14 h-14 bg-purple-100 group-hover:bg-purple-600 rounded-xl flex items-center justify-center transition-colors">
+                            <svg class="w-7 h-7 text-purple-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="font-bold text-gray-800">Exportar para CSV</h3>
+                        <p class="text-sm text-gray-600 text-center">Compatível com Excel/Python</p>
+                    </div>
+                </button>
+
+                <!-- Clear Data -->
+                <button id="clearAllData" class="p-6 border-2 border-red-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group">
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-14 h-14 bg-red-100 group-hover:bg-red-600 rounded-xl flex items-center justify-center transition-colors">
+                            <svg class="w-7 h-7 text-red-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </div>
+                        <h3 class="font-bold text-gray-800">Limpar Todos os Dados</h3>
+                        <p class="text-sm text-gray-600 text-center">⚠️ Ação irreversível</p>
+                    </div>
+                </button>
+            </div>
+        </section>
+
+        <!-- Storage Info -->
+        <section class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Informações de Armazenamento</h2>
+                    <p class="text-sm text-gray-600">Uso atual do banco de dados local</p>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-4 gap-4">
+                <div class="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-xl border-2 border-emerald-100">
+                    <div class="text-emerald-600 text-3xl font-black mb-2" id="speciesCount">-</div>
+                    <div class="text-sm font-semibold text-gray-700">Espécies</div>
+                </div>
+
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border-2 border-blue-100">
+                    <div class="text-blue-600 text-3xl font-black mb-2" id="audiosCount">-</div>
+                    <div class="text-sm font-semibold text-gray-700">Áudios</div>
+                </div>
+
+                <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border-2 border-purple-100">
+                    <div class="text-purple-600 text-3xl font-black mb-2" id="modelsCount">-</div>
+                    <div class="text-sm font-semibold text-gray-700">Modelos</div>
+                </div>
+
+                <div class="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-xl border-2 border-orange-100">
+                    <div class="text-orange-600 text-3xl font-black mb-2" id="analysesCount">-</div>
+                    <div class="text-sm font-semibold text-gray-700">Análises</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Preferences -->
+        <section class="bg-white rounded-2xl shadow-lg p-6">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Preferências</h2>
+                    <p class="text-sm text-gray-600">Configurações gerais da aplicação</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Auto Save -->
+                <div class="flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl">
+                    <div>
+                        <h3 class="font-bold text-gray-800">Auto-Salvar</h3>
+                        <p class="text-sm text-gray-600">Salvar automaticamente durante treinamento</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="autoSave" class="sr-only peer" checked>
+                        <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                </div>
+
+                <!-- Notifications -->
+                <div class="flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl">
+                    <div>
+                        <h3 class="font-bold text-gray-800">Notificações</h3>
+                        <p class="text-sm text-gray-600">Exibir alertas e mensagens do sistema</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="notifications" class="sr-only peer" checked>
+                        <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                </div>
+            </div>
+
+            <button id="savePreferences" class="mt-6 w-full bg-gradient-to-r from-pink-600 to-rose-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
+                Salvar Preferências
+            </button>
+        </section>
+    </main>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { Navbar } from './js/navbar.js';
+        import { storage } from './js/storage.js';
+        
+        // Inicializar navbar
+        const navbar = new Navbar();
+        navbar.mount();
+
+        // Load settings on start
+        loadSettings();
+        loadStorageInfo();
+
+        // Model Settings
+        const threshold = document.getElementById('threshold');
+        const thresholdValue = document.getElementById('thresholdValue');
+        const batchSize = document.getElementById('batchSize');
+        const epochs = document.getElementById('epochs');
+        const saveModelSettings = document.getElementById('saveModelSettings');
+
+        threshold.addEventListener('input', (e) => {
+            thresholdValue.textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        saveModelSettings.addEventListener('click', () => {
+            const settings = storage.getSettings();
+            settings.modelConfig = {
+                threshold: parseFloat(threshold.value),
+                batchSize: parseInt(batchSize.value),
+                epochs: parseInt(epochs.value)
+            };
+            storage.saveSettings(settings);
+            showNotification('Configurações do modelo salvas!', 'success');
+        });
+
+        // Data Management
+        document.getElementById('exportAllData').addEventListener('click', async () => {
+            try {
+                const data = await storage.exportAllData();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `bioacustic-backup-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showNotification('Dados exportados com sucesso!', 'success');
+            } catch (error) {
+                console.error('Erro ao exportar:', error);
+                showNotification('Erro ao exportar dados', 'error');
+            }
+        });
+
+        document.getElementById('importAllData').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    await storage.importData(data);
+                    await loadStorageInfo();
+                    showNotification('Dados importados com sucesso!', 'success');
+                } catch (error) {
+                    console.error('Erro ao importar:', error);
+                    showNotification('Erro ao importar dados', 'error');
+                }
+            };
+            input.click();
+        });
+
+        document.getElementById('exportCSV').addEventListener('click', async () => {
+            try {
+                const species = await storage.getAllSpecies();
+                let csv = 'Nome Científico,Nome Comum,Família,Ordem,Classe,Filo,Status de Conservação,Número de Áudios\n';
+                
+                species.forEach(s => {
+                    csv += `"${s.scientificName}","${s.commonName || ''}","${s.taxonomy?.family || ''}","${s.taxonomy?.order || ''}","${s.taxonomy?.class || ''}","${s.taxonomy?.phylum || ''}","${s.conservation || ''}","${s.audioCount || 0}"\n`;
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `bioacustic-species-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showNotification('CSV exportado com sucesso!', 'success');
+            } catch (error) {
+                console.error('Erro ao exportar CSV:', error);
+                showNotification('Erro ao exportar CSV', 'error');
+            }
+        });
+
+        document.getElementById('clearAllData').addEventListener('click', async () => {
+            if (confirm('⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL!\n\nTodos os dados serão permanentemente excluídos:\n- Espécies cadastradas\n- Áudios gravados\n- Modelos treinados\n- Histórico de análises\n- Configurações\n\nDeseja continuar?')) {
+                if (confirm('Você tem certeza ABSOLUTA? Digite "CONFIRMAR" para prosseguir.')) {
+                    try {
+                        await storage.clearAllData();
+                        await loadStorageInfo();
+                        showNotification('Todos os dados foram removidos', 'success');
+                    } catch (error) {
+                        console.error('Erro ao limpar dados:', error);
+                        showNotification('Erro ao limpar dados', 'error');
+                    }
+                }
+            }
+        });
+
+        // Preferences
+        const autoSave = document.getElementById('autoSave');
+        const notifications = document.getElementById('notifications');
+        const savePreferences = document.getElementById('savePreferences');
+
+        savePreferences.addEventListener('click', () => {
+            const settings = storage.getSettings();
+            settings.autoSave = autoSave.checked;
+            settings.notifications = notifications.checked;
+            storage.saveSettings(settings);
+            showNotification('Preferências salvas!', 'success');
+        });
+
+        function loadSettings() {
+            const settings = storage.getSettings();
+            
+            threshold.value = settings.modelConfig.threshold;
+            thresholdValue.textContent = settings.modelConfig.threshold.toFixed(2);
+            batchSize.value = settings.modelConfig.batchSize;
+            epochs.value = settings.modelConfig.epochs;
+            
+            autoSave.checked = settings.autoSave;
+            notifications.checked = settings.notifications;
+        }
+
+        async function loadStorageInfo() {
+            try {
+                const species = await storage.getAllSpecies();
+                const models = await storage.getAllModels();
+                const analyses = await storage.getAnalysisHistory();
+                
+                document.getElementById('speciesCount').textContent = species.length;
+                document.getElementById('modelsCount').textContent = models.length;
+                document.getElementById('analysesCount').textContent = analyses.length;
+                
+                // Audios count (mock - would need actual implementation)
+                document.getElementById('audiosCount').textContent = '0';
+            } catch (error) {
+                console.error('Erro ao carregar info de storage:', error);
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: 'bg-emerald-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500',
+                info: 'bg-blue-500'
+            };
+
+            const notification = document.createElement('div');
+            notification.className = `fixed bottom-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg z-50`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

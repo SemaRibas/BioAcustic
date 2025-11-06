@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioAcustic - Análise de Vocalização</title>
+    
+    <!-- Favicon (Emoji SVG) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐸</text></svg>">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    
+    <!-- WaveSurfer.js (Para visualização de waveform) -->
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configuração do Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: tailwind.colors.emerald,
+                        secondary: tailwind.colors.sky,
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'slide-in-up': 'slideInUp 0.5s ease-out forwards',
+                        'pulse-scale': 'pulseScale 2s infinite ease-in-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: 0 },
+                            '100%': { opacity: 1 },
+                        },
+                        slideInUp: {
+                            '0%': { opacity: 0, transform: 'translateY(20px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' },
+                        },
+                        pulseScale: {
+                            '0%, 100%': { transform: 'scale(1)' },
+                            '50%': { transform: 'scale(1.05)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #f1f5f9;
+        }
+        
+        .result-item {
+            opacity: 0;
+            animation: slideInUp 0.5s ease-out forwards;
+        }
+
+        .frog-wave {
+            animation: wave 2s infinite ease-in-out;
+        }
+        
+        @keyframes wave {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(5deg); }
+        }
+
+        #dropZone.drag-over {
+            border-color: theme('colors.primary.500') !important;
+            background-color: theme('colors.primary.50') !important;
+        }
+        
+        #recordBtn.is-recording {
+            background: linear-gradient(135deg, theme('colors.red.500'), theme('colors.red.600'));
+            animation: pulse 1.5s infinite;
+        }
+        
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid theme('colors.primary.500');
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #notification-container {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .notification-toast {
+            animation: fadeIn 0.3s ease-out, fadeOut 0.3s ease-in 3.7s forwards;
+            border-left-width: 4px;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; transform: scale(0.9); }
+        }
+
+        .btn-glass {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="font-sans text-slate-800 antialiased">
+    
+    <!-- Navbar Container -->
+    <div id="navbar-container"></div>
+    
+    <!-- Page Header -->
+    <header class="bg-gradient-to-br from-emerald-50 to-teal-50 border-b border-emerald-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                
+                <!-- Título da Página -->
+                <div class="flex items-center gap-3">
+                    <div class="text-5xl">🎙️</div>
+                    <div>
+                        <h1 class="text-3xl font-black text-gray-800">Análise de Vocalização</h1>
+                        <p class="text-gray-600">Grave ou faça upload de áudios para identificação</p>
+                    </div>
+                </div>
+                
+                <!-- Status do Modelo -->
+                <div class="flex items-center gap-3">
+                    <div id="modelStatus" class="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 flex items-center gap-2">
+                        <svg class="animate-spin h-4 w-4 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-700">Carregando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        
+        <div class="flex flex-col items-center gap-8">
+            
+            <!-- Coluna da Esquerda: Inputs -->
+            <div class="w-full lg:w-4/5 flex flex-col gap-8 animate-fade-in">
+                
+                <!-- Upload Section -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+                    <div class="p-6">
+                        <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+                            1. Enviar ou Gravar Áudio
+                        </h2>
+                        
+                        <div class="grid sm:grid-cols-2 gap-6">
+                            <!-- Drop Zone -->
+                            <div id="dropZone" class="relative border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer transition-all duration-300 hover:border-primary-500 hover:bg-primary-50">
+                                <input type="file" id="audioUpload" accept="audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                <label for="audioUpload" class="flex flex-col items-center justify-center h-full cursor-pointer">
+                                    <svg class="w-12 h-12 text-primary-500 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6"></path><path d="M12 9v6"></path><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.7.9 6.4 2.3L21 4"></path><path d="M21 4v5h-5"></path></svg>
+                                    <p id="dropZoneText" class="font-semibold text-slate-700">Clique ou arraste o áudio</p>
+                                    <p class="text-xs text-slate-500">MP3, WAV, FLAC</p>
+                                </label>
+                            </div>
+                            
+                            <!-- Gravação -->
+                            <div class="border border-slate-200 rounded-xl p-6 text-center flex flex-col items-center justify-center bg-white shadow-sm">
+                                <svg class="w-12 h-12 text-red-500 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
+                                <button id="recordBtn" class="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition-all duration-300 hover:shadow-lg hover:scale-105">
+                                    ⏺ Iniciar Gravação
+                                </button>
+                                <p id="recordingStatus" class="text-xs text-slate-500 mt-2 h-4"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Card do Player -->
+                <div id="audioPlayerContainer" class="bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hidden">
+                    <div class="p-6">
+                        <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                            2. Pré-visualizar Áudio
+                        </h2>
+                        <div class="bg-slate-900 rounded-lg p-4">
+                            <div id="waveform" class="h-24"></div>
+                            <audio id="audioPlayer" controls class="w-full mt-4 hidden"></audio>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Botão de Analisar -->
+                <button id="analyzeBtn" class="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white text-lg font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] animate-pulse-scale disabled:opacity-50 disabled:cursor-not-allowed disabled:animate-none disabled:shadow-lg disabled:scale-100" disabled>
+                    <span class="flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"></path><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m4.93 19.07 1.41-1.41"></path><path d="m17.66 6.34 1.41-1.41"></path></svg>
+                        Analisar Vocalização
+                    </span>
+                </button>
+            </div>
+
+            
+            <!-- Coluna da Direita: Outputs -->
+            <div id="resultsSection" class="w-full lg:w-4/5 flex flex-col gap-8 hidden">
+                
+                <!-- Card de Resultados -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+                    <div class="p-6">
+                        <h2 class="text-xl font-bold text-slate-900 mb-5 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20V16"></path></svg>
+                            Resultados da Classificação
+                        </h2>
+                        <div id="resultsContainer" class="flex flex-col gap-4 max-h-[300px] overflow-y-auto pr-2">
+                            <!-- Resultados serão inseridos dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card de Informações da Espécie -->
+                <div id="speciesInfoCard" class="bg-gradient-to-br from-primary-50 to-secondary-50 border border-primary-200 rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hidden">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="16" y2="12"></line><line x1="12" x2="12.01" y1="8" y2="8"></line></svg>
+                                Informações da Espécie
+                            </h3>
+                            <button id="fetchSpeciesInfoBtn" class="flex items-center gap-1.5 bg-white hover:bg-primary-100 text-primary-700 font-semibold text-sm py-2 px-3 rounded-lg shadow-sm transition-all duration-300 border border-primary-300 hover:border-primary-400 disabled:opacity-50 disabled:cursor-not-allowed" title="Buscar informações online">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                                <span id="fetchBtnText">Buscar Info</span>
+                            </button>
+                        </div>
+                        <div id="speciesInfoContent" class="text-sm text-slate-700 space-y-2">
+                            <!-- Conteúdo dinâmico -->
+                        </div>
+                        
+                        <!-- Loading state para busca -->
+                        <div id="speciesInfoLoading" class="hidden">
+                            <div class="flex items-center justify-center py-8">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                            </div>
+                            <p class="text-center text-sm text-slate-600 mt-2">Buscando informações científicas...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Card do Espectrograma -->
+                <div class="bg-slate-900 text-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+                    <div class="p-6">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                            Mel-Espectrograma
+                        </h3>
+                        <div class="bg-black rounded-lg p-2">
+                            <canvas id="spectrogramCanvas" class="w-full h-48 rounded"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 mt-16 py-8">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm mb-1">🧬 Desenvolvido com TensorFlow.js e Deep Learning</p>
+            <p class="text-xs">Projeto BioAcustic © 2025 | Para fins educacionais e científicos</p>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300 hidden opacity-0">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl text-center w-80 max-w-sm animate-slide-in-up">
+            <div class="loader mx-auto mb-5"></div>
+            <h3 class="text-lg font-bold text-slate-900 mb-2">Processando Áudio...</h3>
+            <p class="text-sm text-slate-600 mb-4">Gerando espectrograma e executando inferência.</p>
+            <div class="w-full bg-slate-200 rounded-full h-2.5">
+                <div id="progressBar" class="bg-primary-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="progressText" class="text-xs text-slate-500 mt-2">0%</p>
+        </div>
+    </div>
+    
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+    
+    <!-- Scripts -->
+    <script type="module">
+        import { Navbar } from './js/navbar.js';
+        
+        // Inicializar navbar
+        const navbar = new Navbar();
+        navbar.mount();
+    </script>
+    <script type="module" src="./js/app.js"></script>
+
+</body>
+</html>

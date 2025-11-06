@@ -3,26 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BioAcustic - Classificador de Anfíbios</title>
+    <title>BioAcustic - Classificação de Anfíbios por IA</title>
     
-    <!-- Favicon (Emoji SVG) -->
+    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐸</text></svg>">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <!-- TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
-    
-    <!-- WaveSurfer.js (Para visualização de waveform) -->
-    <script src="https://unpkg.com/wavesurfer.js@7"></script>
-
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Configuração do Tailwind -->
     <script>
         tailwind.config = {
             theme: {
@@ -32,301 +25,412 @@
                     },
                     colors: {
                         primary: tailwind.colors.emerald,
-                        secondary: tailwind.colors.sky,
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.5s ease-out forwards',
-                        'slide-in-up': 'slideInUp 0.5s ease-out forwards',
-                        'pulse-scale': 'pulseScale 2s infinite ease-in-out',
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: 0 },
-                            '100%': { opacity: 1 },
-                        },
-                        slideInUp: {
-                            '0%': { opacity: 0, transform: 'translateY(20px)' },
-                            '100%': { opacity: 1, transform: 'translateY(0)' },
-                        },
-                        pulseScale: {
-                            '0%, 100%': { transform: 'scale(1)' },
-                            '50%': { transform: 'scale(1.05)' },
-                        }
+                        secondary: tailwind.colors.teal,
                     }
                 }
             }
         }
     </script>
-    
+
     <style>
-        body {
-            background-color: #f1f5f9;
-        }
-        
-        .result-item {
-            opacity: 0;
-            animation: slideInUp 0.5s ease-out forwards;
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .frog-wave {
-            animation: wave 2s infinite ease-in-out;
-        }
-        
-        @keyframes wave {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-8px) rotate(5deg); }
+        .blob {
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            animation: blob 7s infinite;
         }
 
-        #dropZone.drag-over {
-            border-color: theme('colors.primary.500') !important;
-            background-color: theme('colors.primary.50') !important;
-        }
-        
-        #recordBtn.is-recording {
-            background: linear-gradient(135deg, theme('colors.red.500'), theme('colors.red.600'));
-            animation: pulse 1.5s infinite;
-        }
-        
-        .loader {
-            width: 48px;
-            height: 48px;
-            border: 5px solid theme('colors.primary.500');
-            border-bottom-color: transparent;
-            border-radius: 50%;
-            display: inline-block;
-            box-sizing: border-box;
-            animation: rotation 1s linear infinite;
+        @keyframes blob {
+            0%, 100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+            25% { border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%; }
+            50% { border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%; }
+            75% { border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%; }
         }
 
-        @keyframes rotation {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        #notification-container {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            z-index: 50;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-        
-        .notification-toast {
-            animation: fadeIn 0.3s ease-out, fadeOut 0.3s ease-in 3.7s forwards;
-            border-left-width: 4px;
-        }
-
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; transform: scale(0.9); }
-        }
-
-        .btn-glass {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 600;
+        .card-hover {
             transition: all 0.3s ease;
         }
-        .btn-glass:hover {
-            background: rgba(255, 255, 255, 0.3);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
-<body class="font-sans text-slate-800 antialiased">
-    
-    <!-- Header -->
-    <header class="bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500 text-white shadow-lg sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex items-center justify-between flex-wrap gap-4">
-                
-                <!-- Logo e Título -->
-                <div class="flex items-center gap-3">
-                    <div class="text-5xl frog-wave cursor-pointer">🐸</div>
-                    <div>
-                        <h1 class="text-2xl font-extrabold text-shadow-sm">BioAcustic</h1>
-                        <p class="text-sm opacity-90 text-shadow-xs">Classificador de Vocalizações de Anfíbios</p>
-                    </div>
-                </div>
-                
-                <!-- Status e Ações -->
-                <div class="flex items-center gap-3">
-                    <a href="train.html" class="btn-glass hidden sm:inline-flex">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path><path d="M6.5 2H11l.5 2.5V17H6.5"></path></svg>
-                        <span>Treinar Modelo</span>
-                    </a>
-                    <div id="modelStatus" class="btn-glass">
-                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Carregando...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <!-- Navbar Container -->
+    <div id="navbar-container"></div>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden py-20 lg:py-32">
+        <!-- Background Blobs -->
+        <div class="absolute top-10 right-10 w-72 h-72 bg-emerald-200 opacity-20 blob"></div>
+        <div class="absolute bottom-10 left-10 w-96 h-96 bg-teal-200 opacity-20 blob" style="animation-delay: -3s;"></div>
         
-        <div class="flex flex-col items-center gap-8">
-            
-            <!-- Coluna da Esquerda: Inputs -->
-            <div class="w-full lg:w-4/5 flex flex-col gap-8 animate-fade-in">
-                
-                <!-- Upload Section -->
-                <div class="bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
-                    <div class="p-6">
-                        <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
-                            1. Enviar ou Gravar Áudio
-                        </h2>
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="max-w-6xl mx-auto">
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <!-- Hero Content -->
+                    <div class="text-center lg:text-left">
+                        <div class="inline-block px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-sm font-semibold mb-6">
+                            🎯 Tecnologia de IA para Biodiversidade
+                        </div>
                         
-                        <div class="grid sm:grid-cols-2 gap-6">
-                            <!-- Drop Zone -->
-                            <div id="dropZone" class="relative border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer transition-all duration-300 hover:border-primary-500 hover:bg-primary-50">
-                                <input type="file" id="audioUpload" accept="audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                                <label for="audioUpload" class="flex flex-col items-center justify-center h-full cursor-pointer">
-                                    <svg class="w-12 h-12 text-primary-500 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6"></path><path d="M12 9v6"></path><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.7.9 6.4 2.3L21 4"></path><path d="M21 4v5h-5"></path></svg>
-                                    <p id="dropZoneText" class="font-semibold text-slate-700">Clique ou arraste o áudio</p>
-                                    <p class="text-xs text-slate-500">MP3, WAV, FLAC</p>
-                                </label>
+                        <h1 class="text-5xl lg:text-6xl font-black mb-6 leading-tight">
+                            Identifique <span class="gradient-text">Anfíbios</span> pela Vocalização
+                        </h1>
+                        
+                        <p class="text-xl text-gray-600 mb-8 leading-relaxed">
+                            Sistema inteligente de classificação de espécies usando <strong>Deep Learning</strong> e análise acústica. 
+                            Treine, analise e gerencie dados de biodiversidade com precisão científica.
+                        </p>
+
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                            <a href="analyze.html" class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
+                                🎙️ Analisar Áudio
+                            </a>
+                            <a href="train.html" class="bg-white text-gray-800 px-8 py-4 rounded-xl font-bold text-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all border-2 border-gray-200">
+                                🧠 Treinar Modelo
+                            </a>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="grid grid-cols-3 gap-6 mt-12">
+                            <div class="text-center">
+                                <div class="text-3xl font-black text-emerald-600">95%+</div>
+                                <div class="text-sm text-gray-600 mt-1">Precisão</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-black text-emerald-600">&lt;2s</div>
+                                <div class="text-sm text-gray-600 mt-1">Análise</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-black text-emerald-600">100%</div>
+                                <div class="text-sm text-gray-600 mt-1">Offline</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hero Visual -->
+                    <div class="relative">
+                        <div class="relative bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-8 shadow-2xl">
+                            <!-- Mockup de Interface -->
+                            <div class="bg-white rounded-2xl overflow-hidden shadow-xl">
+                                <div class="bg-gray-800 px-4 py-3 flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                    <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                </div>
+                                <div class="p-6 bg-gradient-to-br from-gray-50 to-white">
+                                    <!-- Waveform Mockup -->
+                                    <div class="bg-emerald-50 rounded-xl p-4 mb-4">
+                                        <div class="flex items-end justify-between h-24 space-x-1">
+                                            <div class="w-1 bg-emerald-400 rounded-t" style="height: 40%"></div>
+                                            <div class="w-1 bg-emerald-500 rounded-t" style="height: 70%"></div>
+                                            <div class="w-1 bg-emerald-400 rounded-t" style="height: 50%"></div>
+                                            <div class="w-1 bg-emerald-600 rounded-t" style="height: 90%"></div>
+                                            <div class="w-1 bg-emerald-500 rounded-t" style="height: 60%"></div>
+                                            <div class="w-1 bg-emerald-400 rounded-t" style="height: 45%"></div>
+                                            <div class="w-1 bg-emerald-600 rounded-t" style="height: 85%"></div>
+                                            <div class="w-1 bg-emerald-500 rounded-t" style="height: 75%"></div>
+                                            <div class="w-1 bg-emerald-400 rounded-t" style="height: 55%"></div>
+                                            <div class="w-1 bg-emerald-500 rounded-t" style="height: 65%"></div>
+                                            <div class="w-1 bg-emerald-600 rounded-t" style="height: 95%"></div>
+                                            <div class="w-1 bg-emerald-500 rounded-t" style="height: 70%"></div>
+                                            <div class="w-1 bg-emerald-400 rounded-t" style="height: 50%"></div>
+                                            <div class="w-1 bg-emerald-500 rounded-t" style="height: 60%"></div>
+                                            <div class="w-1 bg-emerald-400 rounded-t" style="height: 40%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Results Mockup -->
+                                    <div class="space-y-3">
+                                        <div class="bg-white border-2 border-emerald-200 rounded-lg p-3 flex items-center justify-between">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-lg">🐸</div>
+                                                <div>
+                                                    <div class="font-semibold text-sm">Boana faber</div>
+                                                    <div class="text-xs text-gray-500">Sapo-ferreiro</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-emerald-600 font-bold">94%</div>
+                                        </div>
+                                        <div class="bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-between opacity-60">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-lg">🐸</div>
+                                                <div>
+                                                    <div class="font-semibold text-sm">Scinax fuscovarius</div>
+                                                    <div class="text-xs text-gray-500">Perereca</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-gray-600 font-bold">3%</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <!-- Gravação -->
-                            <div class="border border-slate-200 rounded-xl p-6 text-center flex flex-col items-center justify-center bg-white shadow-sm">
-                                <svg class="w-12 h-12 text-red-500 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
-                                <button id="recordBtn" class="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2 px-4 rounded-full shadow-md transition-all duration-300 hover:shadow-lg hover:scale-105">
-                                    ⏺ Iniciar Gravação
-                                </button>
-                                <p id="recordingStatus" class="text-xs text-slate-500 mt-2 h-4"></p>
+                            <!-- Floating Badge -->
+                            <div class="absolute -top-4 -right-4 bg-white rounded-2xl shadow-xl p-4 transform rotate-6">
+                                <div class="text-center">
+                                    <div class="text-emerald-600 font-black text-2xl">AI</div>
+                                    <div class="text-xs text-gray-600 font-semibold">Powered</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-
-                <!-- Card do Player -->
-                <div id="audioPlayerContainer" class="bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hidden">
-                    <div class="p-6">
-                        <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
-                            2. Pré-visualizar Áudio
-                        </h2>
-                        <div class="bg-slate-900 rounded-lg p-4">
-                            <div id="waveform" class="h-24"></div>
-                            <audio id="audioPlayer" controls class="w-full mt-4 hidden"></audio>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Botão de Analisar -->
-                <button id="analyzeBtn" class="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white text-lg font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] animate-pulse-scale disabled:opacity-50 disabled:cursor-not-allowed disabled:animate-none disabled:shadow-lg disabled:scale-100" disabled>
-                    <span class="flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"></path><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m4.93 19.07 1.41-1.41"></path><path d="m17.66 6.34 1.41-1.41"></path></svg>
-                        Analisar Vocalização
-                    </span>
-                </button>
-            </div>
-
-            
-            <!-- Coluna da Direita: Outputs -->
-            <div id="resultsSection" class="w-full lg:w-4/5 flex flex-col gap-8 hidden">
-                
-                <!-- Card de Resultados -->
-                <div class="bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
-                    <div class="p-6">
-                        <h2 class="text-xl font-bold text-slate-900 mb-5 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20V16"></path></svg>
-                            Resultados da Classificação
-                        </h2>
-                        <div id="resultsContainer" class="flex flex-col gap-4 max-h-[300px] overflow-y-auto pr-2">
-                            <!-- Resultados serão inseridos dinamicamente -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card de Informações da Espécie -->
-                <div id="speciesInfoCard" class="bg-gradient-to-br from-primary-50 to-secondary-50 border border-primary-200 rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hidden">
-                    <div class="p-6">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="16" y2="12"></line><line x1="12" x2="12.01" y1="8" y2="8"></line></svg>
-                                Informações da Espécie
-                            </h3>
-                            <button id="fetchSpeciesInfoBtn" class="flex items-center gap-1.5 bg-white hover:bg-primary-100 text-primary-700 font-semibold text-sm py-2 px-3 rounded-lg shadow-sm transition-all duration-300 border border-primary-300 hover:border-primary-400 disabled:opacity-50 disabled:cursor-not-allowed" title="Buscar informações online">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
-                                <span id="fetchBtnText">Buscar Info</span>
-                            </button>
-                        </div>
-                        <div id="speciesInfoContent" class="text-sm text-slate-700 space-y-2">
-                            <!-- Conteúdo dinâmico -->
-                        </div>
-                        
-                        <!-- Loading state para busca -->
-                        <div id="speciesInfoLoading" class="hidden">
-                            <div class="flex items-center justify-center py-8">
-                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-                            </div>
-                            <p class="text-center text-sm text-slate-600 mt-2">Buscando informações científicas...</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Card do Espectrograma -->
-                <div class="bg-slate-900 text-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
-                    <div class="p-6">
-                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
-                            Mel-Espectrograma
-                        </h3>
-                        <div class="bg-black rounded-lg p-2">
-                            <canvas id="spectrogramCanvas" class="w-full h-48 rounded"></canvas>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
-    </main>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-20 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-black mb-4">Recursos Poderosos</h2>
+                    <p class="text-xl text-gray-600">Tudo que você precisa para pesquisa em bioacústica</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Feature 1 -->
+                    <div class="card-hover bg-gradient-to-br from-emerald-50 to-white p-8 rounded-2xl border-2 border-emerald-100">
+                        <div class="w-14 h-14 bg-emerald-600 rounded-2xl flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Análise em Tempo Real</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Grave ou faça upload de áudio e obtenha resultados instantâneos com visualização de espectrograma e confidence scores.
+                        </p>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="card-hover bg-gradient-to-br from-teal-50 to-white p-8 rounded-2xl border-2 border-teal-100">
+                        <div class="w-14 h-14 bg-teal-600 rounded-2xl flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Treinamento Custom</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Treine modelos CNN personalizados com seus próprios dados. Suporte para transfer learning e fine-tuning.
+                        </p>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="card-hover bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl border-2 border-blue-100">
+                        <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Banco de Espécies</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Gerencie informações completas de espécies com integração automática às APIs científicas (GBIF, Wikipedia).
+                        </p>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="card-hover bg-gradient-to-br from-purple-50 to-white p-8 rounded-2xl border-2 border-purple-100">
+                        <div class="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Métricas Detalhadas</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Acompanhe accuracy, loss, confusion matrix e outras métricas em tempo real durante o treinamento.
+                        </p>
+                    </div>
+
+                    <!-- Feature 5 -->
+                    <div class="card-hover bg-gradient-to-br from-orange-50 to-white p-8 rounded-2xl border-2 border-orange-100">
+                        <div class="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Exportação Completa</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Exporte modelos, datasets e resultados em formatos científicos compatíveis com Python/R.
+                        </p>
+                    </div>
+
+                    <!-- Feature 6 -->
+                    <div class="card-hover bg-gradient-to-br from-pink-50 to-white p-8 rounded-2xl border-2 border-pink-100">
+                        <div class="w-14 h-14 bg-pink-600 rounded-2xl flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">100% Offline</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            Funciona completamente no navegador. Sem servidor, sem APIs obrigatórias. Seus dados ficam com você.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-20 bg-gradient-to-br from-emerald-50 to-teal-50">
+        <div class="container mx-auto px-4">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-black mb-4">Como Funciona</h2>
+                    <p class="text-xl text-gray-600">Fluxo de trabalho simples e eficiente</p>
+                </div>
+
+                <div class="grid md:grid-cols-4 gap-8">
+                    <!-- Step 1 -->
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                            <span class="text-3xl font-black text-white">1</span>
+                        </div>
+                        <h3 class="text-lg font-bold mb-3">Upload de Áudio</h3>
+                        <p class="text-gray-600">Grave ou faça upload de vocalizações de anfíbios</p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                            <span class="text-3xl font-black text-white">2</span>
+                        </div>
+                        <h3 class="text-lg font-bold mb-3">Processamento</h3>
+                        <p class="text-gray-600">Extração automática de características acústicas</p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                            <span class="text-3xl font-black text-white">3</span>
+                        </div>
+                        <h3 class="text-lg font-bold mb-3">Classificação</h3>
+                        <p class="text-gray-600">Rede neural identifica a espécie com confiança</p>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                            <span class="text-3xl font-black text-white">4</span>
+                        </div>
+                        <h3 class="text-lg font-bold mb-3">Resultados</h3>
+                        <p class="text-gray-600">Visualize informações detalhadas da espécie</p>
+                    </div>
+                </div>
+
+                <!-- CTA -->
+                <div class="text-center mt-16">
+                    <a href="analyze.html" class="inline-block bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-10 py-5 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all">
+                        🚀 Começar Agora
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technology Stack -->
+    <section class="py-20 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-black mb-4">Tecnologias Utilizadas</h2>
+                    <p class="text-gray-600">Stack moderno e científico</p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                    <div class="text-center">
+                        <div class="bg-gradient-to-br from-orange-100 to-orange-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-10 h-10 text-orange-600" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0L1.608 6v12L12 24l10.392-6V6L12 0zm0 2.488L20.784 7.2v9.6L12 21.512 3.216 16.8V7.2L12 2.488z"/>
+                            </svg>
+                        </div>
+                        <div class="font-bold">TensorFlow.js</div>
+                        <div class="text-sm text-gray-600">Deep Learning</div>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="bg-gradient-to-br from-blue-100 to-blue-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                            <span class="text-3xl font-black text-blue-600">W</span>
+                        </div>
+                        <div class="font-bold">WaveSurfer.js</div>
+                        <div class="text-sm text-gray-600">Visualização</div>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="bg-gradient-to-br from-purple-100 to-purple-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                            <span class="text-3xl font-black text-purple-600">IDB</span>
+                        </div>
+                        <div class="font-bold">IndexedDB</div>
+                        <div class="text-sm text-gray-600">Storage</div>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="bg-gradient-to-br from-emerald-100 to-emerald-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                            <span class="text-3xl font-black text-emerald-600">API</span>
+                        </div>
+                        <div class="font-bold">GBIF + Wiki</div>
+                        <div class="text-sm text-gray-600">Dados</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-400 mt-16 py-8">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p class="text-sm mb-1">🧬 Desenvolvido com TensorFlow.js e Deep Learning</p>
-            <p class="text-xs">Projeto BioAcustic © 2025 | Para fins educacionais e científicos</p>
+    <footer class="bg-gradient-to-br from-gray-900 to-gray-800 text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="max-w-6xl mx-auto">
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div>
+                        <h3 class="text-xl font-bold mb-4">BioAcustic</h3>
+                        <p class="text-gray-400 leading-relaxed">
+                            Sistema de classificação de anfíbios por vocalização usando inteligência artificial.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">Links Rápidos</h3>
+                        <ul class="space-y-2">
+                            <li><a href="analyze.html" class="text-gray-400 hover:text-white transition-colors">Análise</a></li>
+                            <li><a href="train.html" class="text-gray-400 hover:text-white transition-colors">Treinamento</a></li>
+                            <li><a href="species.html" class="text-gray-400 hover:text-white transition-colors">Espécies</a></li>
+                            <li><a href="settings.html" class="text-gray-400 hover:text-white transition-colors">Configurações</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">Recursos</h3>
+                        <ul class="space-y-2">
+                            <li><a href="docs/SPECIES_INFO_FEATURE.md" class="text-gray-400 hover:text-white transition-colors">Documentação</a></li>
+                            <li><a href="https://www.gbif.org" target="_blank" class="text-gray-400 hover:text-white transition-colors">GBIF API</a></li>
+                            <li><a href="https://www.tensorflow.org/js" target="_blank" class="text-gray-400 hover:text-white transition-colors">TensorFlow.js</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                    <p>&copy; 2025 BioAcustic. Sistema de código aberto para pesquisa em biodiversidade.</p>
+                </div>
+            </div>
         </div>
     </footer>
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300 hidden opacity-0">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl text-center w-80 max-w-sm animate-slide-in-up">
-            <div class="loader mx-auto mb-5"></div>
-            <h3 class="text-lg font-bold text-slate-900 mb-2">Processando Áudio...</h3>
-            <p class="text-sm text-slate-600 mb-4">Gerando espectrograma e executando inferência.</p>
-            <div class="w-full bg-slate-200 rounded-full h-2.5">
-                <div id="progressBar" class="bg-primary-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-            </div>
-            <p id="progressText" class="text-xs text-slate-500 mt-2">0%</p>
-        </div>
-    </div>
-    
-    <!-- Notification Container -->
-    <div id="notification-container"></div>
-    
     <!-- Scripts -->
-    <script type="module" src="./js/app.js"></script>
-
+    <script type="module">
+        import { Navbar } from './js/navbar.js';
+        
+        // Inicializar navbar
+        const navbar = new Navbar();
+        navbar.mount();
+    </script>
 </body>
 </html>
