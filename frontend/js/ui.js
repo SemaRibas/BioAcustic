@@ -175,140 +175,242 @@ export class UIManager {
     createResultCard(prediction, index) {
         const card = document.createElement('div');
         card.className = 'result-card fade-in';
-        card.style.animationDelay = `${index * 100}ms`;
         
         // Buscar informações da espécie cadastrada
         const speciesInfo = this.getSpeciesInfo(prediction.species);
         
-        // Cor da borda baseada na posição
-        const borderColors = ['var(--primary-500)', 'var(--secondary-500)', 'var(--warning)', 
-                              'var(--gray-400)', 'var(--gray-400)'];
-        const borderColor = borderColors[index] || 'var(--gray-400)';
+        // Determinar níveis de confiança
+        const isHighConfidence = prediction.probability >= 0.7;
+        const isMediumConfidence = prediction.probability >= 0.5 && prediction.probability < 0.7;
+        const isTopResult = index === 0;
         
-        // Ícone baseado na confiança
-        let icon = '🐸';
-        
-        if (prediction.probability < 0.5) {
-            icon = '❓';
-        } else if (prediction.probability < 0.7) {
-            icon = '🤔';
-        } else if (prediction.probability >= 0.95) {
-            icon = '🎯';
-        }
-        
-        // Cor do texto de confiança
-        const confidenceColor = this.getConfidenceColor(prediction.probability);
-        
-        // Cor da barra de progresso
-        const progressBgColor = this.getProgressColor(prediction.probability);
-        
+        // Estilos base do card
         card.style.cssText = `
             background: white;
-            border-radius: var(--radius-xl);
-            padding: var(--space-xl);
-            margin-bottom: var(--space-lg);
-            border-left: 4px solid ${borderColor};
-            box-shadow: var(--shadow-md);
-            transition: all var(--transition-base);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
             animation: fadeIn 0.5s ease-out forwards;
             animation-delay: ${index * 100}ms;
             opacity: 0;
+            border: ${isTopResult ? '2px solid #10b981' : '1px solid #e5e7eb'};
         `;
 
-        // Informações extras se espécie estiver cadastrada
-        let extraInfo = '';
+        // Construir HTML do card
+        let cardHTML = '';
+
+        // Se tiver informações da espécie, mostrar com imagem
         if (speciesInfo) {
-            extraInfo = `
-                <div style="background: linear-gradient(to right, #d1fae5, #ccfbf1); border-radius: var(--radius-lg); padding: var(--space-md); margin-top: var(--space-md); border: 1px solid #a7f3d0;">
-                    <div style="display: flex; align-items-start; gap: var(--space-md);">
-                        ${speciesInfo.imageUrl ? 
-                            `<img src="${speciesInfo.imageUrl}" alt="${speciesInfo.scientificName}" style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-md); flex-shrink: 0;" onerror="this.style.display='none'">` : 
-                            `<div style="width: 80px; height: 80px; background: linear-gradient(135deg, #10b981, #14b8a6); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; flex-shrink: 0;">🐸</div>`
-                        }
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="font-size: 0.875rem; font-weight: 600; color: #047857; margin-bottom: var(--space-xs);">
-                                ✓ Espécie Cadastrada
+            const imageDisplay = speciesInfo.imageUrl ? 
+                `<img src="${speciesInfo.imageUrl}" alt="${speciesInfo.scientificName}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'">
+                 <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);"></div>` :
+                '';
+            
+            cardHTML = `
+                <!-- Header com Imagem/Gradiente -->
+                <div style="position: relative; height: 200px; background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%); overflow: hidden;">
+                    ${imageDisplay}
+                    
+                    <!-- Badge de Posição -->
+                    ${isTopResult ? `
+                        <div style="position: absolute; top: 12px; left: 12px;">
+                            <span style="background: #10b981; color: white; padding: 6px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);">
+                                <svg style="width: 14px; height: 14px; fill: currentColor;" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                Melhor Resultado
+                            </span>
+                        </div>
+                    ` : ''}
+                    
+                    <!-- Confiança Badge -->
+                    <div style="position: absolute; top: 12px; right: 12px;">
+                        <div style="background: ${isHighConfidence ? 'rgba(16, 185, 129, 0.95)' : isMediumConfidence ? 'rgba(251, 191, 36, 0.95)' : 'rgba(107, 114, 128, 0.95)'}; 
+                                    backdrop-filter: blur(8px); padding: 8px 16px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: white; line-height: 1; text-align: center;">
+                                ${prediction.confidence}%
                             </div>
-                            ${speciesInfo.commonName ? 
-                                `<div style="font-size: 0.875rem; color: #065f46; margin-bottom: var(--space-xs);">
-                                    <strong>Nome Comum:</strong> ${speciesInfo.commonName}
-                                </div>` : ''
-                            }
-                            ${speciesInfo.taxonomy?.family ? 
-                                `<div style="font-size: 0.875rem; color: #065f46; margin-bottom: var(--space-xs);">
-                                    <strong>Família:</strong> ${speciesInfo.taxonomy.family}
-                                </div>` : ''
-                            }
-                            ${speciesInfo.conservation ? 
-                                `<div style="font-size: 0.875rem; color: #065f46; margin-bottom: var(--space-xs);">
-                                    <strong>Status de Conservação:</strong> ${speciesInfo.conservation}
-                                </div>` : ''
-                            }
-                            ${speciesInfo.audioCount > 0 ? 
-                                `<div style="font-size: 0.875rem; color: #065f46;">
-                                    <strong>Áudios cadastrados:</strong> ${speciesInfo.audioCount}
-                                </div>` : ''
-                            }
+                            <div style="font-size: 0.625rem; color: rgba(255, 255, 255, 0.9); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; text-align: center;">
+                                Confiança
+                            </div>
                         </div>
                     </div>
-                    ${speciesInfo.description ? 
-                        `<div style="margin-top: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid #a7f3d0; font-size: 0.813rem; color: #065f46; line-height: 1.5;">
-                            ${speciesInfo.description}
-                        </div>` : ''
-                    }
+                    
+                    <!-- Nome Científico -->
+                    <div style="position: absolute; bottom: 16px; left: 16px; right: 16px;">
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: white; margin: 0; font-style: italic; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">
+                            ${prediction.species}
+                        </h3>
+                        ${speciesInfo.commonName ? `
+                            <p style="font-size: 1rem; color: rgba(255, 255, 255, 0.95); margin: 4px 0 0 0; font-weight: 500; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);">
+                                ${speciesInfo.commonName}
+                            </p>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Corpo do Card -->
+                <div style="padding: 20px;">
+                    <!-- Barra de Confiança -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 0.875rem; font-weight: 600; color: #374151;">Nível de Confiança</span>
+                            <span style="font-size: 0.875rem; font-weight: 600; color: ${isHighConfidence ? '#10b981' : isMediumConfidence ? '#f59e0b' : '#6b7280'};">
+                                ${isHighConfidence ? 'Alta' : isMediumConfidence ? 'Média' : 'Baixa'}
+                            </span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: #e5e7eb; border-radius: 9999px; overflow: hidden;">
+                            <div style="height: 100%; background: ${isHighConfidence ? 'linear-gradient(90deg, #10b981, #059669)' : isMediumConfidence ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #6b7280, #4b5563)'}; 
+                                        width: ${prediction.confidence}%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${index * 100}ms; border-radius: 9999px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informações da Espécie -->
+                    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%); border-radius: 12px; padding: 16px; border: 1px solid #d1fae5;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <svg style="width: 18px; height: 18px; color: #10b981;" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span style="font-size: 0.875rem; font-weight: 600; color: #047857;">Espécie Cadastrada</span>
+                        </div>
+                        
+                        <div style="display: grid; gap: 10px;">
+                            ${speciesInfo.taxonomy?.family ? `
+                                <div style="display: flex; align-items: start; gap: 8px;">
+                                    <svg style="width: 16px; height: 16px; color: #059669; flex-shrink: 0; margin-top: 2px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                    </svg>
+                                    <div style="flex: 1;">
+                                        <span style="font-size: 0.75rem; color: #065f46; font-weight: 500;">Família</span>
+                                        <p style="font-size: 0.875rem; color: #064e3b; font-weight: 600; margin: 2px 0 0 0;">${speciesInfo.taxonomy.family}</p>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${speciesInfo.taxonomy?.order ? `
+                                <div style="display: flex; align-items: start; gap: 8px;">
+                                    <svg style="width: 16px; height: 16px; color: #0d9488; flex-shrink: 0; margin-top: 2px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <div style="flex: 1;">
+                                        <span style="font-size: 0.75rem; color: #065f46; font-weight: 500;">Ordem</span>
+                                        <p style="font-size: 0.875rem; color: #064e3b; font-weight: 600; margin: 2px 0 0 0;">${speciesInfo.taxonomy.order}</p>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${speciesInfo.conservation ? `
+                                <div style="display: flex; align-items: start; gap: 8px;">
+                                    <svg style="width: 16px; height: 16px; color: #0891b2; flex-shrink: 0; margin-top: 2px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    </svg>
+                                    <div style="flex: 1;">
+                                        <span style="font-size: 0.75rem; color: #065f46; font-weight: 500;">Conservação</span>
+                                        <p style="font-size: 0.875rem; color: #064e3b; font-weight: 600; margin: 2px 0 0 0;">${speciesInfo.conservation}</p>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${speciesInfo.audioCount > 0 ? `
+                                <div style="display: flex; align-items: start; gap: 8px;">
+                                    <svg style="width: 16px; height: 16px; color: #0891b2; flex-shrink: 0; margin-top: 2px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                                    </svg>
+                                    <div style="flex: 1;">
+                                        <span style="font-size: 0.75rem; color: #065f46; font-weight: 500;">Áudios Treinados</span>
+                                        <p style="font-size: 0.875rem; color: #064e3b; font-weight: 600; margin: 2px 0 0 0;">${speciesInfo.audioCount} amostras</p>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${speciesInfo.description ? `
+                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #d1fae5;">
+                                <p style="font-size: 0.875rem; color: #065f46; line-height: 1.6; margin: 0;">
+                                    ${speciesInfo.description.length > 200 ? speciesInfo.description.substring(0, 200) + '...' : speciesInfo.description}
+                                </p>
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
             `;
         } else {
-            extraInfo = `
-                <div style="background: #fef3c7; border-radius: var(--radius-lg); padding: var(--space-sm); margin-top: var(--space-md); border: 1px solid #fde68a;">
-                    <div style="font-size: 0.813rem; color: #92400e;">
-                        ⚠️ Espécie não cadastrada no sistema. <a href="species.html" style="color: #b45309; text-decoration: underline; font-weight: 600;">Cadastrar agora</a>
+            // Espécie não cadastrada
+            cardHTML = `
+                <!-- Header Simples -->
+                <div style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); padding: 20px; position: relative;">
+                    <div style="position: absolute; top: 12px; right: 12px;">
+                        <div style="background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(8px); padding: 8px 16px; border-radius: 12px;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: white; line-height: 1; text-align: center;">
+                                ${prediction.confidence}%
+                            </div>
+                            <div style="font-size: 0.625rem; color: rgba(255, 255, 255, 0.9); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; text-align: center;">
+                                Confiança
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="max-width: 70%;">
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: white; margin: 0; font-style: italic;">
+                            ${prediction.species}
+                        </h3>
+                    </div>
+                </div>
+
+                <div style="padding: 20px;">
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 0.875rem; font-weight: 600; color: #374151;">Nível de Confiança</span>
+                            <span style="font-size: 0.875rem; font-weight: 600; color: ${isHighConfidence ? '#10b981' : isMediumConfidence ? '#f59e0b' : '#6b7280'};">
+                                ${isHighConfidence ? 'Alta' : isMediumConfidence ? 'Média' : 'Baixa'}
+                            </span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: #e5e7eb; border-radius: 9999px; overflow: hidden;">
+                            <div style="height: 100%; background: ${isHighConfidence ? 'linear-gradient(90deg, #10b981, #059669)' : isMediumConfidence ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #6b7280, #4b5563)'}; 
+                                        width: ${prediction.confidence}%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${index * 100}ms; border-radius: 9999px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%); border-radius: 12px; padding: 16px; border: 1px solid #fde68a;">
+                        <div style="display: flex; gap: 12px;">
+                            <svg style="width: 20px; height: 20px; color: #d97706; flex-shrink: 0; margin-top: 2px;" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            <div style="flex: 1;">
+                                <h4 style="font-size: 0.875rem; font-weight: 600; color: #92400e; margin: 0 0 6px 0;">
+                                    Espécie Não Cadastrada
+                                </h4>
+                                <p style="font-size: 0.813rem; color: #78350f; line-height: 1.5; margin: 0 0 12px 0;">
+                                    Esta espécie ainda não possui informações detalhadas no sistema. Cadastre-a para adicionar dados taxonômicos, fotos e descrições.
+                                </p>
+                                <a href="species.html" style="display: inline-flex; align-items: center; gap: 6px; background: #f59e0b; color: white; padding: 8px 16px; border-radius: 8px; font-size: 0.875rem; font-weight: 600; text-decoration: none; transition: all 0.2s;">
+                                    <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    Cadastrar Espécie
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
         }
-        
-        card.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md);">
-                <div style="display: flex; align-items: center; gap: var(--space-md);">
-                    <div style="font-size: 2rem; line-height: 1;">${icon}</div>
-                    <div>
-                        <h4 style="font-size: 1.125rem; font-weight: 600; color: var(--gray-900); margin: 0; font-style: italic;">
-                            ${prediction.species}
-                        </h4>
-                        ${index === 0 ? `
-                            <span class="badge badge-success" style="margin-top: var(--space-xs);">
-                                Mais Provável
-                            </span>
-                        ` : ''}
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 2rem; font-weight: 700; color: ${confidenceColor}; line-height: 1;">
-                        ${prediction.confidence}%
-                    </div>
-                    <div style="font-size: 0.75rem; color: var(--gray-500); margin-top: var(--space-xs);">confiança</div>
-                </div>
-            </div>
-            
-            <!-- Barra de progresso -->
-            <div style="width: 100%; background: var(--gray-200); border-radius: var(--radius-full); height: 12px; overflow: hidden; margin-bottom: var(--space-md);">
-                <div class="progress-bar" style="height: 100%; background: ${progressBgColor}; width: ${prediction.confidence}%; transition: width 0.5s ease 0.3s;">
-                </div>
-            </div>
 
-            ${extraInfo}
-        `;
+        card.innerHTML = cardHTML;
         
-        // Adicionar hover effect
+        // Hover effect
         card.addEventListener('mouseenter', () => {
             card.style.transform = 'translateY(-4px)';
-            card.style.boxShadow = 'var(--shadow-lg)';
+            card.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
         });
         
         card.addEventListener('mouseleave', () => {
             card.style.transform = 'translateY(0)';
-            card.style.boxShadow = 'var(--shadow-md)';
+            card.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
         });
         
         return card;
