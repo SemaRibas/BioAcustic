@@ -9,18 +9,21 @@
 import { ModelManager } from './model.js';
 import { AudioProcessor } from './audio.js';
 import { UIManager } from './ui.js';
+import { SpeciesInfoFetcher } from './species-info.js';
 
 class BioAcusticApp {
     constructor() {
         this.modelManager = new ModelManager();
         this.audioProcessor = new AudioProcessor();
         this.uiManager = new UIManager();
+        this.speciesInfoFetcher = new SpeciesInfoFetcher();
         
         this.currentAudioBuffer = null;
         this.isRecording = false;
         this.mediaRecorder = null;
         this.recordedChunks = [];
         this.currentFile = null;
+        this.currentSpeciesName = null; // Para armazenar o nome da espécie atual
     }
     
     async initialize() {
@@ -65,6 +68,7 @@ class BioAcusticApp {
         const dropZone = document.getElementById('dropZone');
         const recordBtn = document.getElementById('recordBtn');
         const analyzeBtn = document.getElementById('analyzeBtn');
+        const fetchSpeciesInfoBtn = document.getElementById('fetchSpeciesInfoBtn');
 
         if (uploadInput) {
             uploadInput.addEventListener('change', (e) => this.handleFileUpload(e.target.files[0]));
@@ -95,6 +99,10 @@ class BioAcusticApp {
         
         if (analyzeBtn) {
             analyzeBtn.addEventListener('click', () => this.analyzeAudio());
+        }
+        
+        if (fetchSpeciesInfoBtn) {
+            fetchSpeciesInfoBtn.addEventListener('click', () => this.fetchAndDisplaySpeciesInfo());
         }
     }
     
@@ -343,6 +351,191 @@ class BioAcusticApp {
         }
         
         return normalized;
+    }
+    
+    /**
+     * Busca e exibe informações científicas sobre a espécie detectada
+     */
+    async fetchAndDisplaySpeciesInfo() {
+        // Pegar o nome da primeira predição (mais provável)
+        const resultsContainer = document.getElementById('resultsContainer');
+        if (!resultsContainer || !resultsContainer.firstChild) {
+            this.uiManager.showNotification('Nenhuma espécie foi detectada ainda. Analise um áudio primeiro.', 'warning');
+            return;
+        }
+        
+        // Extrair o nome da espécie do primeiro resultado
+        const firstResultCard = resultsContainer.firstChild;
+        const speciesNameElement = firstResultCard.querySelector('.text-xl, h4');
+        
+        if (!speciesNameElement) {
+            this.uiManager.showNotification('Não foi possível identificar o nome da espécie.', 'error');
+            return;
+        }
+        
+        const speciesName = speciesNameElement.textContent.trim();
+        this.currentSpeciesName = speciesName;
+        
+        console.log(`🔍 Buscando informações para: ${speciesName}`);
+        
+        // UI elements
+        const fetchBtn = document.getElementById('fetchSpeciesInfoBtn');
+        const fetchBtnText = document.getElementById('fetchBtnText');
+        const speciesInfoContent = document.getElementById('speciesInfoContent');
+        const speciesInfoLoading = document.getElementById('speciesInfoLoading');
+        const speciesInfoCard = document.getElementById('speciesInfoCard');
+        
+        // Mostrar card e loading
+        speciesInfoCard.classList.remove('hidden');
+        speciesInfoContent.classList.add('hidden');
+        speciesInfoLoading.classList.remove('hidden');
+        fetchBtn.disabled = true;
+        fetchBtnText.textContent = 'Buscando...';
+        
+        try {
+            // Buscar informações
+            const info = await this.speciesInfoFetcher.fetchSpeciesInfo(speciesName);
+            
+            // Exibir informações
+            this.displaySpeciesInfo(info);
+            
+            // Atualizar UI
+            fetchBtnText.textContent = 'Atualizar Info';
+            this.uiManager.showNotification('✅ Informações encontradas!', 'success');
+            
+        } catch (error) {
+            console.error('❌ Erro ao buscar informações:', error);
+            this.uiManager.showNotification(`Erro ao buscar informações: ${error.message}`, 'error');
+            
+            // Mostrar mensagem de erro
+            speciesInfoContent.innerHTML = `
+                <div class="text-center text-red-600 py-4">
+                    <svg class="w-12 h-12 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" x2="12" y1="8" y2="12"></line>
+                        <line x1="12" x2="12.01" y1="16" y2="16"></line>
+                    </svg>
+                    <p class="font-semibold">Não foi possível buscar informações</p>
+                    <p class="text-sm text-slate-600 mt-1">Tente novamente mais tarde</p>
+                </div>
+            `;
+            speciesInfoContent.classList.remove('hidden');
+            fetchBtnText.textContent = 'Tentar Novamente';
+            
+        } finally {
+            speciesInfoLoading.classList.add('hidden');
+            fetchBtn.disabled = false;
+        }
+    }
+    
+    /**
+     * Exibe as informações da espécie na UI
+     */
+    displaySpeciesInfo(info) {
+        const speciesInfoContent = document.getElementById('speciesInfoContent');
+        
+        let html = '';
+        
+        // Nome científico e comuns
+        html += `<div class="mb-4">
+            <h4 class="font-bold text-lg text-slate-900 mb-2">${info.scientificName}</h4>`;
+        
+        if (info.commonNames && info.commonNames.length > 0) {
+            html += `<p class="text-sm text-slate-600">
+                <strong>Nomes comuns:</strong> ${info.commonNames.slice(0, 3).join(', ')}
+            </p>`;
+        }
+        html += `</div>`;
+        
+        // Imagem (se disponível)
+        if (info.image) {
+            html += `<div class="mb-4">
+                <img src="${info.image}" alt="${info.scientificName}" class="w-full h-48 object-cover rounded-lg shadow-md">
+            </div>`;
+        }
+        
+        // Taxonomia
+        if (info.taxonomy && Object.keys(info.taxonomy).length > 0) {
+            html += `<div class="bg-white rounded-lg p-3 mb-3 border border-primary-200">
+                <h5 class="font-semibold text-sm text-slate-900 mb-2 flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                    Taxonomia
+                </h5>
+                <div class="grid grid-cols-2 gap-2 text-xs">`;
+            
+            const taxonomyOrder = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus'];
+            const taxonomyLabels = {
+                kingdom: 'Reino',
+                phylum: 'Filo',
+                class: 'Classe',
+                order: 'Ordem',
+                family: 'Família',
+                genus: 'Gênero'
+            };
+            
+            taxonomyOrder.forEach(rank => {
+                if (info.taxonomy[rank]) {
+                    html += `
+                        <div>
+                            <span class="text-slate-500">${taxonomyLabels[rank]}:</span>
+                            <span class="font-semibold text-slate-700">${info.taxonomy[rank]}</span>
+                        </div>`;
+                }
+            });
+            
+            html += `</div></div>`;
+        }
+        
+        // Descrição
+        if (info.description) {
+            const shortDescription = info.description.length > 300 
+                ? info.description.substring(0, 300) + '...' 
+                : info.description;
+            
+            html += `<div class="bg-white rounded-lg p-3 mb-3 border border-secondary-200">
+                <h5 class="font-semibold text-sm text-slate-900 mb-2 flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                    Descrição
+                </h5>
+                <p class="text-xs text-slate-700 leading-relaxed">${shortDescription}</p>
+            </div>`;
+        }
+        
+        // Status de conservação
+        if (info.conservation) {
+            html += `<div class="bg-amber-50 rounded-lg p-3 mb-3 border border-amber-300">
+                <h5 class="font-semibold text-sm text-slate-900 mb-1 flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path></svg>
+                    Status de Conservação
+                </h5>
+                <p class="text-xs text-amber-900">${info.conservation}</p>
+            </div>`;
+        }
+        
+        // Fontes
+        if (info.sources && info.sources.length > 0) {
+            html += `<div class="mt-4 pt-3 border-t border-slate-200">
+                <p class="text-xs text-slate-500 mb-2">Fontes:</p>
+                <div class="flex flex-wrap gap-2">`;
+            
+            info.sources.forEach(source => {
+                html += `
+                    <a href="${source.url}" target="_blank" rel="noopener noreferrer" 
+                       class="text-xs font-medium text-primary-700 hover:text-primary-900 flex items-center gap-1 bg-primary-50 px-2 py-1 rounded-md hover:bg-primary-100 transition-colors">
+                        ${source.name}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" x2="21" y1="14" y2="3"></line>
+                        </svg>
+                    </a>`;
+            });
+            
+            html += `</div></div>`;
+        }
+        
+        speciesInfoContent.innerHTML = html;
+        speciesInfoContent.classList.remove('hidden');
     }
 }
 
