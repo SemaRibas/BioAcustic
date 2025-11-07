@@ -31,6 +31,48 @@
             }
         }
     </script>
+    
+    <style>
+        /* Animação do dropdown */
+        #syncMenu {
+            animation: fadeInDown 0.2s ease-out;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Efeito de hover nos botões do menu */
+        #syncMenu button {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #syncMenu button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+        
+        #syncMenu button:hover::before {
+            width: 200%;
+            height: 200%;
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     <!-- Navbar Container -->
@@ -48,12 +90,91 @@
                     </div>
                 </div>
                 
-                <button id="addSpeciesBtn" class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    Nova Espécie
-                </button>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <!-- Botões de Sincronização Firebase -->
+                    <div class="relative group">
+                        <button id="syncMenuBtn" class="bg-white border-2 border-blue-300 text-blue-700 px-4 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                            </svg>
+                            Biblioteca
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div id="syncMenu" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border-2 border-gray-200 overflow-hidden z-50">
+                            <div class="bg-gradient-to-r from-blue-500 to-indigo-500 p-4 text-white">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/>
+                                        <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/>
+                                        <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/>
+                                    </svg>
+                                    <h3 class="font-bold text-sm">Biblioteca Compartilhada</h3>
+                                </div>
+                                <p class="text-xs opacity-90">Sincronize espécies com o Firebase</p>
+                            </div>
+                            
+                            <div class="p-2">
+                                <button id="uploadToCloudBtn" class="w-full flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg transition-all group/item">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover/item:bg-blue-200 transition-colors">
+                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 text-left">
+                                        <p class="font-semibold text-gray-800 text-sm">Enviar para Nuvem</p>
+                                        <p class="text-xs text-gray-500">Sincronizar minhas espécies</p>
+                                    </div>
+                                </button>
+                                
+                                <button id="downloadFromCloudBtn" class="w-full flex items-center gap-3 p-3 hover:bg-green-50 rounded-lg transition-all group/item">
+                                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover/item:bg-green-200 transition-colors">
+                                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 text-left">
+                                        <p class="font-semibold text-gray-800 text-sm">Baixar da Nuvem</p>
+                                        <p class="text-xs text-gray-500">Importar biblioteca completa</p>
+                                    </div>
+                                </button>
+                                
+                                <div class="border-t border-gray-200 my-2"></div>
+                                
+                                <button id="libraryStatsBtn" class="w-full flex items-center gap-3 p-3 hover:bg-purple-50 rounded-lg transition-all group/item">
+                                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover/item:bg-purple-200 transition-colors">
+                                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 text-left">
+                                        <p class="font-semibold text-gray-800 text-sm">Estatísticas</p>
+                                        <p class="text-xs text-gray-500">Ver dados da biblioteca</p>
+                                    </div>
+                                </button>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-3 border-t border-gray-200">
+                                <p class="text-xs text-gray-600 flex items-start gap-2">
+                                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span>Apenas informações das espécies são sincronizadas. Áudios permanecem locais.</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="addSpeciesBtn" class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Nova Espécie
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -247,6 +368,7 @@
         import { Navbar } from './js/navbar.js';
         import { storage } from './js/storage.js';
         import { SpeciesInfoFetcher } from './js/species-info.js';
+        import { firebaseManager } from './js/firebase-config.js';
         
         // Inicializar navbar
         const navbar = new Navbar();
@@ -271,6 +393,13 @@
         const speciesCount = document.getElementById('speciesCount');
         const exportBtn = document.getElementById('exportBtn');
         const importBtn = document.getElementById('importBtn');
+        
+        // Elementos Firebase
+        const syncMenuBtn = document.getElementById('syncMenuBtn');
+        const syncMenu = document.getElementById('syncMenu');
+        const uploadToCloudBtn = document.getElementById('uploadToCloudBtn');
+        const downloadFromCloudBtn = document.getElementById('downloadFromCloudBtn');
+        const libraryStatsBtn = document.getElementById('libraryStatsBtn');
 
         // Carregar espécies ao iniciar
         loadSpecies();
@@ -285,10 +414,25 @@
         fetchInfoBtn.addEventListener('click', fetchSpeciesInfo);
         exportBtn.addEventListener('click', exportSpecies);
         importBtn.addEventListener('click', importSpecies);
+        
+        // Firebase Event Listeners
+        syncMenuBtn.addEventListener('click', () => {
+            syncMenu.classList.toggle('hidden');
+        });
+        uploadToCloudBtn.addEventListener('click', uploadToCloud);
+        downloadFromCloudBtn.addEventListener('click', downloadFromCloud);
+        libraryStatsBtn.addEventListener('click', showLibraryStats);
 
         // Fechar modal ao clicar fora
         speciesModal.addEventListener('click', (e) => {
             if (e.target === speciesModal) closeModal();
+        });
+        
+        // Fechar menu de sync ao clicar fora
+        document.addEventListener('click', (e) => {
+            if (!syncMenuBtn.contains(e.target) && !syncMenu.contains(e.target)) {
+                syncMenu.classList.add('hidden');
+            }
         });
 
         async function loadSpecies() {
@@ -638,6 +782,103 @@
             setTimeout(() => {
                 notification.remove();
             }, 3000);
+        }
+
+        // ===== FIREBASE SYNC FUNCTIONS =====
+
+        async function uploadToCloud() {
+            syncMenu.classList.add('hidden');
+            
+            const confirmed = confirm(
+                '🔄 Sincronizar com Firebase?\n\n' +
+                'Isso enviará TODAS as suas espécies para a biblioteca compartilhada.\n' +
+                '⚠️ Apenas informações das espécies serão enviadas (sem áudios).\n\n' +
+                'Deseja continuar?'
+            );
+            
+            if (!confirmed) return;
+            
+            try {
+                showNotification('⏳ Sincronizando com Firebase...', 'info');
+                
+                const result = await firebaseManager.syncAllSpeciesToCloud(storage);
+                
+                if (result.success) {
+                    showNotification(
+                        `✅ ${result.results.success}/${result.results.total} espécies sincronizadas!`,
+                        'success'
+                    );
+                } else {
+                    showNotification('❌ Erro ao sincronizar: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Erro na sincronização:', error);
+                showNotification('❌ Erro ao sincronizar com Firebase', 'error');
+            }
+        }
+
+        async function downloadFromCloud() {
+            syncMenu.classList.add('hidden');
+            
+            const confirmed = confirm(
+                '📥 Importar biblioteca do Firebase?\n\n' +
+                'Isso baixará TODAS as espécies da biblioteca compartilhada.\n' +
+                '✅ Suas espécies locais serão preservadas.\n' +
+                '🔄 Espécies duplicadas serão atualizadas.\n' +
+                '📝 Áudios locais não serão afetados.\n\n' +
+                'Deseja continuar?'
+            );
+            
+            if (!confirmed) return;
+            
+            try {
+                showNotification('⏳ Baixando biblioteca do Firebase...', 'info');
+                
+                const result = await firebaseManager.importAllSpeciesFromCloud(storage);
+                
+                if (result.success) {
+                    await loadSpecies();
+                    showNotification(
+                        `✅ ${result.results.imported} espécies importadas!`,
+                        'success'
+                    );
+                } else {
+                    showNotification('❌ Erro ao importar: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Erro na importação:', error);
+                showNotification('❌ Erro ao importar do Firebase', 'error');
+            }
+        }
+
+        async function showLibraryStats() {
+            syncMenu.classList.add('hidden');
+            
+            try {
+                showNotification('⏳ Carregando estatísticas...', 'info');
+                
+                const result = await firebaseManager.getLibraryStats();
+                
+                if (result.success) {
+                    const stats = result.stats;
+                    
+                    const message = 
+                        `📚 Estatísticas da Biblioteca Firebase\n\n` +
+                        `🐸 Total de Espécies: ${stats.totalSpecies}\n` +
+                        `🖼️ Com Imagens: ${stats.withImages}\n` +
+                        `📝 Com Descrições: ${stats.withDescription}\n` +
+                        `🛡️ Com Status de Conservação: ${stats.withConservation}\n` +
+                        `🏷️ Famílias: ${stats.families}\n` +
+                        `📋 Ordens: ${stats.orders}`;
+                    
+                    alert(message);
+                } else {
+                    showNotification('❌ Erro ao carregar estatísticas: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+                showNotification('❌ Erro ao carregar estatísticas', 'error');
+            }
         }
     </script>
 </body>
