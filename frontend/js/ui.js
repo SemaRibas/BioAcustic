@@ -100,47 +100,47 @@ export class UIManager {
         if (!statusDiv || !iconDiv || !labelSpan || !descP) return;
         
         if (status === 'success') {
-            // Estilo de Sucesso - Fundo branco com borda verde
-            statusDiv.className = 'bg-white rounded-xl shadow-lg border-2 border-emerald-400 overflow-hidden transition-all duration-300 hover:shadow-xl';
+            // Estilo de Sucesso - Destaque máximo com borda grossa verde
+            statusDiv.className = 'bg-white rounded-2xl shadow-2xl border-4 border-emerald-500 overflow-hidden transition-all duration-300 hover:shadow-[0_20px_60px_-15px_rgba(16,185,129,0.5)] hover:scale-105';
             
-            iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center';
+            iconDiv.className = 'flex-shrink-0 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg';
             iconDiv.innerHTML = `
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
                 </svg>
             `;
             
             labelSpan.textContent = message || 'Modelo Carregado';
-            labelSpan.className = 'text-sm font-bold text-gray-900';
+            labelSpan.className = 'text-lg font-black text-gray-900 tracking-tight';
             
-            descP.textContent = details.description || `${details.species || 'N/A'} espécies • Treinado com ${details.samples || 'N/A'} amostras`;
-            descP.className = 'text-xs text-gray-700 truncate';
+            descP.textContent = details.description || 'Sistema pronto para análise';
+            descP.className = 'text-sm font-medium text-gray-700';
             
-            badgeSpan.textContent = 'Pronto';
-            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
+            badgeSpan.textContent = '✓ Pronto';
+            badgeSpan.className = 'px-3 py-1 text-sm font-bold rounded-full bg-emerald-500 text-white shadow-md';
             badgeSpan.classList.remove('hidden');
             
             if (loadingBar) loadingBar.classList.add('hidden');
             
         } else if (status === 'error') {
-            // Estilo de Erro - Fundo branco com borda vermelha
-            statusDiv.className = 'bg-white rounded-xl shadow-lg border-2 border-red-400 overflow-hidden transition-all duration-300 hover:shadow-xl';
+            // Estilo de Erro - Destaque máximo com borda grossa vermelha
+            statusDiv.className = 'bg-white rounded-2xl shadow-2xl border-4 border-red-500 overflow-hidden transition-all duration-300 hover:shadow-[0_20px_60px_-15px_rgba(239,68,68,0.5)] hover:scale-105';
             
-            iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full bg-red-500 flex items-center justify-center';
+            iconDiv.className = 'flex-shrink-0 w-14 h-14 rounded-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center shadow-lg';
             iconDiv.innerHTML = `
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             `;
             
             labelSpan.textContent = message || 'Erro ao Carregar';
-            labelSpan.className = 'text-sm font-bold text-gray-900';
+            labelSpan.className = 'text-lg font-black text-gray-900 tracking-tight';
             
             descP.textContent = details.description || 'Nenhum modelo encontrado. Treine um modelo primeiro.';
-            descP.className = 'text-xs text-gray-700 truncate';
+            descP.className = 'text-sm font-medium text-gray-700';
             
-            badgeSpan.textContent = 'Erro';
-            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-300';
+            badgeSpan.textContent = '✗ Erro';
+            badgeSpan.className = 'px-3 py-1 text-sm font-bold rounded-full bg-red-500 text-white shadow-md';
             badgeSpan.classList.remove('hidden');
             
             if (loadingBar) loadingBar.classList.add('hidden');
@@ -159,51 +159,51 @@ export class UIManager {
             }
             
         } else if (status === 'warning') {
-            // Estilo de Aviso - Fundo branco com borda amarela
-            statusDiv.className = 'bg-white rounded-xl shadow-lg border-2 border-yellow-400 overflow-hidden transition-all duration-300 hover:shadow-xl';
+            // Estilo de Aviso - Destaque máximo com borda grossa amarela
+            statusDiv.className = 'bg-white rounded-2xl shadow-2xl border-4 border-yellow-500 overflow-hidden transition-all duration-300 hover:shadow-[0_20px_60px_-15px_rgba(234,179,8,0.5)] hover:scale-105';
             
-            iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center';
+            iconDiv.className = 'flex-shrink-0 w-14 h-14 rounded-full bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center shadow-lg';
             iconDiv.innerHTML = `
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
             `;
             
             labelSpan.textContent = message || 'Atenção';
-            labelSpan.className = 'text-sm font-bold text-gray-900';
+            labelSpan.className = 'text-lg font-black text-gray-900 tracking-tight';
             
             descP.textContent = details.description || 'Verificação necessária';
-            descP.className = 'text-xs text-gray-700 truncate';
+            descP.className = 'text-sm font-medium text-gray-700';
             
-            badgeSpan.textContent = 'Aviso';
-            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 border border-yellow-300';
+            badgeSpan.textContent = '⚠ Aviso';
+            badgeSpan.className = 'px-3 py-1 text-sm font-bold rounded-full bg-yellow-500 text-white shadow-md';
             badgeSpan.classList.remove('hidden');
             
             if (loadingBar) loadingBar.classList.add('hidden');
             
         } else {
-            // Estilo de Loading (padrão)
-            statusDiv.className = 'bg-white rounded-xl shadow-lg border-2 border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl';
+            // Estilo de Loading - Destaque com borda grossa azul
+            statusDiv.className = 'bg-white rounded-2xl shadow-2xl border-4 border-blue-400 overflow-hidden transition-all duration-300 hover:shadow-[0_20px_60px_-15px_rgba(59,130,246,0.5)]';
             
-            iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center';
+            iconDiv.className = 'flex-shrink-0 w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-lg';
             iconDiv.innerHTML = `
-                <svg class="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg class="animate-spin h-7 w-7 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
             `;
             
             labelSpan.textContent = message || 'Carregando Modelo';
-            labelSpan.className = 'text-sm font-bold text-gray-900';
+            labelSpan.className = 'text-lg font-black text-gray-900 tracking-tight';
             
             descP.textContent = details.description || 'Inicializando rede neural...';
-            descP.className = 'text-xs text-gray-600 truncate';
+            descP.className = 'text-sm font-medium text-gray-700';
             
             badgeSpan.classList.add('hidden');
             
             if (loadingBar) {
                 loadingBar.classList.remove('hidden');
-                loadingBar.innerHTML = '<div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 animate-pulse" style="width: 60%"></div>';
+                loadingBar.innerHTML = '<div class="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 animate-pulse shadow-lg" style="width: 60%"></div>';
             }
             
             if (actionDiv) actionDiv.classList.add('hidden');

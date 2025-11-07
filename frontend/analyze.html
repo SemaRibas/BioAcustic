@@ -189,24 +189,24 @@
                     </div>
                 </div>
                 
-                <!-- Status do Modelo - Design Melhorado -->
-                <div id="modelStatus" class="bg-white rounded-xl shadow-lg border-2 border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl">
-                    <div class="flex items-center gap-4 px-5 py-3">
-                        <!-- Ícone/Status Indicator -->
-                        <div id="modelStatusIcon" class="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                <!-- Status do Modelo - Design Destacado e Visível -->
+                <div id="modelStatus" class="bg-white rounded-2xl shadow-2xl border-4 border-gray-300 overflow-hidden transition-all duration-300 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] hover:scale-105">
+                    <div class="flex items-center gap-4 px-6 py-4">
+                        <!-- Ícone/Status Indicator - Maior e mais visível -->
+                        <div id="modelStatusIcon" class="flex-shrink-0 w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center shadow-lg">
                             <svg class="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                         </div>
                         
-                        <!-- Informações -->
+                        <!-- Informações - Texto maior e mais visível -->
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-0.5">
-                                <span id="modelStatusLabel" class="text-sm font-bold text-gray-900">Carregando Modelo</span>
-                                <span id="modelStatusBadge" class="hidden px-2 py-0.5 text-xs font-semibold rounded-full"></span>
+                            <div class="flex items-center gap-3 mb-1">
+                                <span id="modelStatusLabel" class="text-lg font-black text-gray-900 tracking-tight">Carregando Modelo</span>
+                                <span id="modelStatusBadge" class="hidden px-3 py-1 text-sm font-bold rounded-full shadow-sm"></span>
                             </div>
-                            <p id="modelStatusDesc" class="text-xs text-gray-600 truncate">Inicializando rede neural...</p>
+                            <p id="modelStatusDesc" class="text-sm font-medium text-gray-700">Inicializando rede neural...</p>
                         </div>
                         
                         <!-- Botão de Ação (opcional) -->
@@ -217,9 +217,9 @@
                         </div>
                     </div>
                     
-                    <!-- Barra de Progresso (opcional) -->
-                    <div id="modelLoadingBar" class="h-1 bg-gray-100 overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 animate-pulse" style="width: 60%"></div>
+                    <!-- Barra de Progresso (opcional) - Mais alta e visível -->
+                    <div id="modelLoadingBar" class="h-2 bg-gray-200 overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 animate-pulse shadow-lg" style="width: 60%"></div>
                     </div>
                 </div>
             </div>
