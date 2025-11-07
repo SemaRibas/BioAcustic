@@ -313,7 +313,18 @@
                             <div class="flex-1">
                                 <p class="text-xs text-amber-700 font-medium mb-1">Máximo Recomendado</p>
                                 <p class="text-2xl font-bold text-amber-900">100-150 amostras</p>
-                                <p class="text-xs text-amber-600 mt-0.5">(todas espécies somadas)</p>
+                                <p class="text-xs text-amber-600 mt-0.5">(todas espécies somadas - após fragmentação)</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Alerta sobre Fragmentação -->
+                    <div class="mb-4 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-300">
+                        <div class="flex items-start gap-2">
+                            <span class="text-lg">✨</span>
+                            <div class="flex-1 text-xs text-indigo-900">
+                                <strong>Com Fragmentação Inteligente:</strong> Um áudio de 30s pode gerar 30+ amostras! 
+                                Considere isso ao calcular o limite.
                             </div>
                         </div>
                     </div>
@@ -589,11 +600,13 @@
         import { BrowserTrainer } from './js/trainer.js';
         import { UIManager } from './js/ui.js';
         import { storage } from './js/storage.js';
+        import { AudioFragmenter } from './js/audio-fragmenter.js';
 
         // Inicializar
         const audioProcessor = new AudioProcessor();
         const trainer = new BrowserTrainer();
         const uiManager = new UIManager();
+        const audioFragmenter = new AudioFragmenter();
         
         let uploadedFiles = [];
         
@@ -764,14 +777,55 @@
             renderFilesList();
         };
 
-        // Processar arquivos selecionados
-        function handleFiles(files) {
-            const newFiles = Array.from(files).map(file => ({
-                file: file,
-                replicas: 1
-            }));
-            selectedFiles = [...selectedFiles, ...newFiles];
-            renderFilesList();
+        // Processar arquivos selecionados (com fragmentação opcional)
+        async function handleFiles(files) {
+            // Verifica se a fragmentação está habilitada (função exportada do species.html)
+            const shouldFragment = window.fragmentationEnabled && window.fragmentationEnabled();
+            
+            if (shouldFragment && window.processAudioFiles) {
+                try {
+                    // Mostra loading
+                    uiManager.showNotification('🎨 Processando áudios com fragmentação...', 'info');
+                    
+                    // Aplica fragmentação
+                    const processedFiles = await window.processAudioFiles(
+                        Array.from(files),
+                        (message) => {
+                            console.log(message);
+                        }
+                    );
+                    
+                    // Adiciona arquivos fragmentados
+                    const newFiles = processedFiles.map(file => ({
+                        file: file,
+                        replicas: 1, // Não precisa de réplicas, já foram criadas variações
+                        isFragment: true
+                    }));
+                    
+                    selectedFiles = [...selectedFiles, ...newFiles];
+                    renderFilesList();
+                    
+                } catch (error) {
+                    console.error('Erro ao fragmentar áudios:', error);
+                    uiManager.showNotification('❌ Erro na fragmentação. Usando áudios originais.', 'error');
+                    
+                    // Em caso de erro, usa os arquivos originais
+                    const newFiles = Array.from(files).map(file => ({
+                        file: file,
+                        replicas: 1
+                    }));
+                    selectedFiles = [...selectedFiles, ...newFiles];
+                    renderFilesList();
+                }
+            } else {
+                // Fragmentação desabilitada - comportamento normal
+                const newFiles = Array.from(files).map(file => ({
+                    file: file,
+                    replicas: 1
+                }));
+                selectedFiles = [...selectedFiles, ...newFiles];
+                renderFilesList();
+            }
         }
 
         // Event listeners

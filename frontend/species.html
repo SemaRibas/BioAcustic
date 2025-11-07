@@ -72,6 +72,55 @@
             width: 200%;
             height: 200%;
         }
+
+        /* Slider customizado para indigo */
+        .slider-indigo::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+            transition: all 0.2s;
+        }
+        
+        .slider-indigo::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.6);
+        }
+        
+        .slider-indigo::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+            transition: all 0.2s;
+        }
+        
+        .slider-indigo::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.6);
+        }
+
+        /* Animação fade in */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
@@ -350,6 +399,113 @@
                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all">
                 </div>
 
+                <!-- Audio Fragmentation Settings -->
+                <div class="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl p-5">
+                    <div class="flex items-start gap-3 mb-4">
+                        <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-black text-indigo-900 mb-1">🎨 Fragmentação Inteligente de Áudio</h3>
+                            <p class="text-sm text-indigo-700 leading-relaxed">
+                                Melhora drasticamente a acurácia do modelo fragmentando áudios longos e aplicando <span class="font-bold">Data Augmentation</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Enable Fragmentation Checkbox -->
+                    <div class="flex items-center gap-3 mb-4 p-3 bg-white rounded-lg border border-indigo-200">
+                        <input type="checkbox" id="enableFragmentation" 
+                               class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer">
+                        <label for="enableFragmentation" class="flex-1 text-sm font-bold text-gray-800 cursor-pointer">
+                            ✨ Ativar Fragmentação e Data Augmentation
+                        </label>
+                    </div>
+
+                    <!-- Fragmentation Options (Hidden by default) -->
+                    <div id="fragmentationOptions" class="hidden space-y-4 animate-fadeIn">
+                        
+                        <!-- Fragment Duration Slider -->
+                        <div>
+                            <label class="flex items-center justify-between text-sm font-bold text-gray-700 mb-2">
+                                <span>⏱️ Duração do Fragmento</span>
+                                <span id="fragmentDurationValue" class="text-indigo-600">3.0s</span>
+                            </label>
+                            <input type="range" id="fragmentDuration" 
+                                   min="2" max="5" step="0.5" value="3"
+                                   class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer slider-indigo">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>2s (mais fragmentos)</span>
+                                <span>5s (menos fragmentos)</span>
+                            </div>
+                        </div>
+
+                        <!-- Augmentation Count -->
+                        <div>
+                            <label class="flex items-center justify-between text-sm font-bold text-gray-700 mb-2">
+                                <span>🎭 Variações por Fragmento</span>
+                                <span id="augmentationCountValue" class="text-indigo-600">2</span>
+                            </label>
+                            <input type="range" id="augmentationCount" 
+                                   min="1" max="3" step="1" value="2"
+                                   class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer slider-indigo">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>1 (rápido)</span>
+                                <span>3 (máxima qualidade)</span>
+                            </div>
+                        </div>
+
+                        <!-- Remove Silence Checkbox -->
+                        <div class="flex items-center gap-3 p-3 bg-white rounded-lg border border-indigo-200">
+                            <input type="checkbox" id="removeSilence" checked
+                                   class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer">
+                            <label for="removeSilence" class="flex-1 text-sm font-semibold text-gray-700 cursor-pointer">
+                                🔇 Remover silêncios automaticamente
+                            </label>
+                        </div>
+
+                        <!-- Estimation Info -->
+                        <div id="fragmentationEstimate" class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
+                            <div class="flex items-start gap-3">
+                                <div class="flex-shrink-0 text-2xl">📊</div>
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-bold text-green-900 mb-2">Estimativa de Fragmentação</h4>
+                                    <div class="space-y-1 text-xs text-green-800">
+                                        <p>• <span class="font-bold">Exemplo:</span> Áudio de 30s gerará:</p>
+                                        <p class="ml-4">→ <span class="font-bold text-green-600" id="estimatedFragments">10</span> fragmentos base</p>
+                                        <p class="ml-4">→ <span class="font-bold text-green-600" id="estimatedAugmented">20</span> variações augmentadas</p>
+                                        <p class="ml-4">→ <span class="font-bold text-lg text-green-700" id="estimatedTotal">30</span> amostras totais 🚀</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Augmentation Techniques Info -->
+                        <div class="bg-white border-2 border-indigo-200 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                                <span>🔬</span>
+                                <span>Técnicas de Data Augmentation</span>
+                            </h4>
+                            <ul class="space-y-1 text-xs text-gray-700">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-indigo-500 font-bold">•</span>
+                                    <span><strong>Variação de Volume:</strong> Simula diferentes distâncias de gravação</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-indigo-500 font-bold">•</span>
+                                    <span><strong>Adição de Ruído:</strong> Melhora robustez em ambientes ruidosos</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-indigo-500 font-bold">•</span>
+                                    <span><strong>Pitch Shift:</strong> Simula variações individuais da espécie</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Form Actions -->
                 <div class="flex gap-3 pt-4">
                     <button type="submit" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
@@ -369,6 +525,7 @@
         import { storage } from './js/storage.js';
         import { SpeciesInfoFetcher } from './js/species-info.js';
         import { firebaseManager } from './js/firebase-config.js';
+        import { AudioFragmenter } from './js/audio-fragmenter.js';
         
         // Inicializar navbar
         const navbar = new Navbar();
@@ -378,6 +535,7 @@
         let currentSpecies = [];
         let editingSpeciesId = null;
         const speciesInfoFetcher = new SpeciesInfoFetcher();
+        const audioFragmenter = new AudioFragmenter();
 
         // Elementos DOM
         const addSpeciesBtn = document.getElementById('addSpeciesBtn');
@@ -401,6 +559,18 @@
         const downloadFromCloudBtn = document.getElementById('downloadFromCloudBtn');
         const libraryStatsBtn = document.getElementById('libraryStatsBtn');
 
+        // Elementos de Fragmentação
+        const enableFragmentation = document.getElementById('enableFragmentation');
+        const fragmentationOptions = document.getElementById('fragmentationOptions');
+        const fragmentDuration = document.getElementById('fragmentDuration');
+        const fragmentDurationValue = document.getElementById('fragmentDurationValue');
+        const augmentationCount = document.getElementById('augmentationCount');
+        const augmentationCountValue = document.getElementById('augmentationCountValue');
+        const removeSilence = document.getElementById('removeSilence');
+        const estimatedFragments = document.getElementById('estimatedFragments');
+        const estimatedAugmented = document.getElementById('estimatedAugmented');
+        const estimatedTotal = document.getElementById('estimatedTotal');
+
         // Carregar espécies ao iniciar
         loadSpecies();
 
@@ -422,6 +592,27 @@
         uploadToCloudBtn.addEventListener('click', uploadToCloud);
         downloadFromCloudBtn.addEventListener('click', downloadFromCloud);
         libraryStatsBtn.addEventListener('click', showLibraryStats);
+
+        // Fragmentation Event Listeners
+        enableFragmentation.addEventListener('change', () => {
+            if (enableFragmentation.checked) {
+                fragmentationOptions.classList.remove('hidden');
+            } else {
+                fragmentationOptions.classList.add('hidden');
+            }
+        });
+
+        fragmentDuration.addEventListener('input', () => {
+            fragmentDurationValue.textContent = `${fragmentDuration.value}s`;
+            updateFragmentationEstimate();
+        });
+
+        augmentationCount.addEventListener('input', () => {
+            augmentationCountValue.textContent = augmentationCount.value;
+            updateFragmentationEstimate();
+        });
+
+        removeSilence.addEventListener('change', updateFragmentationEstimate);
 
         // Fechar modal ao clicar fora
         speciesModal.addEventListener('click', (e) => {
@@ -880,6 +1071,98 @@
                 showNotification('❌ Erro ao carregar estatísticas', 'error');
             }
         }
+
+        // ========================================
+        // FUNÇÕES DE FRAGMENTAÇÃO DE ÁUDIO
+        // ========================================
+
+        /**
+         * Atualiza a estimativa de fragmentos baseada nas configurações atuais
+         */
+        function updateFragmentationEstimate() {
+            const duration = 30; // Exemplo: 30 segundos
+            const fragDuration = parseFloat(fragmentDuration.value);
+            const augCount = parseInt(augmentationCount.value);
+            const applyAug = enableFragmentation.checked;
+
+            const estimate = audioFragmenter.estimateFragments(
+                duration,
+                fragDuration,
+                applyAug,
+                augCount
+            );
+
+            estimatedFragments.textContent = estimate.base;
+            estimatedAugmented.textContent = estimate.augmented;
+            estimatedTotal.textContent = estimate.total;
+        }
+
+        /**
+         * Processa um array de arquivos de áudio aplicando fragmentação se habilitada
+         * Esta função será chamada pelo sistema de upload de áudio
+         */
+        async function processAudioFiles(files, onProgress) {
+            if (!enableFragmentation.checked) {
+                // Se fragmentação não está habilitada, retorna os arquivos originais
+                return files;
+            }
+
+            const processedFiles = [];
+            const totalFiles = files.length;
+
+            showNotification('🎨 Iniciando fragmentação inteligente de áudio...', 'info');
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                try {
+                    if (onProgress) {
+                        onProgress(`Fragmentando ${file.name} (${i + 1}/${totalFiles})...`);
+                    }
+
+                    // Configurações de fragmentação
+                    const options = {
+                        fragmentDuration: parseFloat(fragmentDuration.value),
+                        removeSilence: removeSilence.checked,
+                        silenceThreshold: -40,
+                        applyAugmentation: true,
+                        augmentationCount: parseInt(augmentationCount.value)
+                    };
+
+                    // Fragmentar áudio
+                    const fragments = await audioFragmenter.fragmentAudio(file, options);
+                    
+                    console.log(`✅ ${file.name}: ${fragments.length} fragmentos gerados`);
+                    
+                    processedFiles.push(...fragments);
+
+                } catch (error) {
+                    console.error(`❌ Erro ao fragmentar ${file.name}:`, error);
+                    showNotification(`⚠️ Erro ao fragmentar ${file.name}. Usando arquivo original.`, 'warning');
+                    
+                    // Em caso de erro, adiciona o arquivo original
+                    processedFiles.push(file);
+                }
+            }
+
+            showNotification(
+                `✅ Fragmentação concluída! ${files.length} áudio(s) → ${processedFiles.length} amostras`, 
+                'success'
+            );
+
+            return processedFiles;
+        }
+
+        /**
+         * Exporta a função processAudioFiles para ser usada globalmente
+         * Isso permite que a página de treinamento use esta função
+         */
+        window.processAudioFiles = processAudioFiles;
+        window.audioFragmenter = audioFragmenter;
+        window.fragmentationEnabled = () => enableFragmentation.checked;
+        
+        // Inicializa a estimativa
+        updateFragmentationEstimate();
     </script>
 </body>
 </html>
