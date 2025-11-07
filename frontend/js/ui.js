@@ -100,8 +100,8 @@ export class UIManager {
         if (!statusDiv || !iconDiv || !labelSpan || !descP) return;
         
         if (status === 'success') {
-            // Estilo de Sucesso
-            statusDiv.className = 'bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl shadow-lg border-2 border-emerald-300 overflow-hidden transition-all duration-300 hover:shadow-xl';
+            // Estilo de Sucesso - Fundo branco com borda verde
+            statusDiv.className = 'bg-white rounded-xl shadow-lg border-2 border-emerald-400 overflow-hidden transition-all duration-300 hover:shadow-xl';
             
             iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center';
             iconDiv.innerHTML = `
@@ -111,20 +111,20 @@ export class UIManager {
             `;
             
             labelSpan.textContent = message || 'Modelo Carregado';
-            labelSpan.className = 'text-sm font-bold text-emerald-900';
+            labelSpan.className = 'text-sm font-bold text-gray-900';
             
             descP.textContent = details.description || `${details.species || 'N/A'} espécies • Treinado com ${details.samples || 'N/A'} amostras`;
-            descP.className = 'text-xs text-emerald-700 truncate';
+            descP.className = 'text-xs text-gray-700 truncate';
             
             badgeSpan.textContent = 'Pronto';
-            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-200 text-emerald-800';
+            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
             badgeSpan.classList.remove('hidden');
             
             if (loadingBar) loadingBar.classList.add('hidden');
             
         } else if (status === 'error') {
-            // Estilo de Erro
-            statusDiv.className = 'bg-gradient-to-r from-red-50 to-orange-50 rounded-xl shadow-lg border-2 border-red-300 overflow-hidden transition-all duration-300 hover:shadow-xl';
+            // Estilo de Erro - Fundo branco com borda vermelha
+            statusDiv.className = 'bg-white rounded-xl shadow-lg border-2 border-red-400 overflow-hidden transition-all duration-300 hover:shadow-xl';
             
             iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full bg-red-500 flex items-center justify-center';
             iconDiv.innerHTML = `
@@ -134,13 +134,13 @@ export class UIManager {
             `;
             
             labelSpan.textContent = message || 'Erro ao Carregar';
-            labelSpan.className = 'text-sm font-bold text-red-900';
+            labelSpan.className = 'text-sm font-bold text-gray-900';
             
             descP.textContent = details.description || 'Nenhum modelo encontrado. Treine um modelo primeiro.';
-            descP.className = 'text-xs text-red-700 truncate';
+            descP.className = 'text-xs text-gray-700 truncate';
             
             badgeSpan.textContent = 'Erro';
-            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-red-200 text-red-800';
+            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-300';
             badgeSpan.classList.remove('hidden');
             
             if (loadingBar) loadingBar.classList.add('hidden');
@@ -159,8 +159,8 @@ export class UIManager {
             }
             
         } else if (status === 'warning') {
-            // Estilo de Aviso
-            statusDiv.className = 'bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl shadow-lg border-2 border-yellow-300 overflow-hidden transition-all duration-300 hover:shadow-xl';
+            // Estilo de Aviso - Fundo branco com borda amarela
+            statusDiv.className = 'bg-white rounded-xl shadow-lg border-2 border-yellow-400 overflow-hidden transition-all duration-300 hover:shadow-xl';
             
             iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center';
             iconDiv.innerHTML = `
@@ -170,13 +170,13 @@ export class UIManager {
             `;
             
             labelSpan.textContent = message || 'Atenção';
-            labelSpan.className = 'text-sm font-bold text-yellow-900';
+            labelSpan.className = 'text-sm font-bold text-gray-900';
             
             descP.textContent = details.description || 'Verificação necessária';
-            descP.className = 'text-xs text-yellow-700 truncate';
+            descP.className = 'text-xs text-gray-700 truncate';
             
             badgeSpan.textContent = 'Aviso';
-            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-200 text-yellow-800';
+            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 border border-yellow-300';
             badgeSpan.classList.remove('hidden');
             
             if (loadingBar) loadingBar.classList.add('hidden');
