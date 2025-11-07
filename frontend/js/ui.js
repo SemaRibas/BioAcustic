@@ -282,9 +282,18 @@ export class UIManager {
         // Buscar informações da espécie cadastrada
         const speciesInfo = this.getSpeciesInfo(prediction.species);
         
-        // Determinar níveis de confiança
-        const isHighConfidence = prediction.probability >= 0.7;
-        const isMediumConfidence = prediction.probability >= 0.5 && prediction.probability < 0.7;
+        // Carregar threshold configurado para determinar confiança
+        let configuredThreshold = 0.7;
+        try {
+            const settings = JSON.parse(localStorage.getItem('bioAcustic_settings') || '{}');
+            configuredThreshold = settings.modelConfig?.threshold || 0.7;
+        } catch (error) {
+            console.warn('Não foi possível carregar threshold configurado, usando padrão 0.7');
+        }
+        
+        // Determinar níveis de confiança baseado no threshold configurado
+        const isHighConfidence = prediction.probability >= configuredThreshold;
+        const isMediumConfidence = prediction.probability >= (configuredThreshold * 0.7) && prediction.probability < configuredThreshold;
         const isTopResult = index === 0;
         
         // Estilos base do card
@@ -303,6 +312,28 @@ export class UIManager {
 
         // Construir HTML do card
         let cardHTML = '';
+        
+        // Adicionar aviso de baixa confiança se presente
+        if (prediction.lowConfidence) {
+            cardHTML += `
+                <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-bottom: 3px solid #f59e0b; padding: 16px;">
+                    <div style="display: flex; align-items: start; gap: 12px;">
+                        <svg style="width: 24px; height: 24px; color: #d97706; flex-shrink: 0; margin-top: 2px;" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0 0 6px 0; font-size: 0.95rem; font-weight: 700; color: #92400e;">
+                                ⚠️ Confiança Abaixo do Threshold Configurado
+                            </h4>
+                            <p style="margin: 0; font-size: 0.875rem; color: #78350f; line-height: 1.5;">
+                                Nenhuma previsão atingiu o threshold de <strong>${(configuredThreshold * 100).toFixed(0)}%</strong> configurado nas definições. 
+                                Mostrando o melhor resultado disponível. Considere treinar o modelo com mais dados ou ajustar o threshold.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         // Se tiver informações da espécie, mostrar com imagem
         if (speciesInfo) {

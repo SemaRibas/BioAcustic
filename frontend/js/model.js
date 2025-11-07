@@ -158,19 +158,41 @@ export class ModelManager {
     }
     
     getTopPredictions(probabilities, topK = 5) {
+        // Carregar threshold das configurações
+        let threshold = 0.7; // valor padrão
+        try {
+            const settings = JSON.parse(localStorage.getItem('bioAcustic_settings') || '{}');
+            threshold = settings.modelConfig?.threshold || 0.7;
+        } catch (error) {
+            console.warn('Não foi possível carregar threshold, usando padrão 0.7');
+        }
+        
+        console.log(`🎯 Usando threshold: ${threshold}`);
+        
         // Criar array de objetos {class, probability, index}
         const results = probabilities.map((prob, idx) => ({
             species: this.classNames[idx] || `Classe ${idx}`,
             probability: prob,
             confidence: (prob * 100).toFixed(2),
-            index: idx
+            index: idx,
+            passedThreshold: prob >= threshold
         }));
         
         // Ordenar por probabilidade (maior primeiro)
         results.sort((a, b) => b.probability - a.probability);
         
-        // Retornar top K
-        return results.slice(0, topK);
+        // Filtrar por threshold e retornar top K
+        const filtered = results.filter(r => r.passedThreshold);
+        
+        // Se nenhum passou do threshold, retornar pelo menos o melhor resultado com aviso
+        if (filtered.length === 0 && results.length > 0) {
+            console.warn(`⚠️ Nenhuma predição passou do threshold (${threshold}). Mostrando melhor resultado com aviso.`);
+            results[0].lowConfidence = true;
+            return results.slice(0, 1);
+        }
+        
+        // Retornar top K que passaram do threshold
+        return filtered.slice(0, topK);
     }
     
     getClassInfo(className) {

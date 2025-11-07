@@ -281,14 +281,50 @@
         });
 
         saveModelSettings.addEventListener('click', () => {
-            const settings = storage.getSettings();
-            settings.modelConfig = {
-                threshold: parseFloat(threshold.value),
-                batchSize: parseInt(batchSize.value),
-                epochs: parseInt(epochs.value)
-            };
-            storage.saveSettings(settings);
-            showNotification('Configurações do modelo salvas!', 'success');
+            try {
+                const settings = storage.getSettings();
+                
+                const newConfig = {
+                    threshold: parseFloat(threshold.value),
+                    batchSize: parseInt(batchSize.value),
+                    epochs: parseInt(epochs.value)
+                };
+                
+                // Validações
+                if (isNaN(newConfig.threshold) || newConfig.threshold < 0 || newConfig.threshold > 1) {
+                    showNotification('⚠️ Threshold deve estar entre 0 e 1', 'error');
+                    return;
+                }
+                
+                if (isNaN(newConfig.batchSize) || newConfig.batchSize < 1) {
+                    showNotification('⚠️ Batch Size inválido', 'error');
+                    return;
+                }
+                
+                if (isNaN(newConfig.epochs) || newConfig.epochs < 1 || newConfig.epochs > 200) {
+                    showNotification('⚠️ Épocas devem estar entre 1 e 200', 'error');
+                    return;
+                }
+                
+                settings.modelConfig = newConfig;
+                storage.saveSettings(settings);
+                
+                console.log('✅ Configurações salvas:', newConfig);
+                
+                // Feedback visual
+                saveModelSettings.innerHTML = '<span>✅ Salvo com sucesso!</span>';
+                saveModelSettings.classList.add('bg-emerald-700');
+                
+                setTimeout(() => {
+                    saveModelSettings.innerHTML = 'Salvar Configurações do Modelo';
+                    saveModelSettings.classList.remove('bg-emerald-700');
+                }, 2000);
+                
+                showNotification('✅ Configurações salvas! Use-as no treinamento.', 'success');
+            } catch (error) {
+                console.error('Erro ao salvar configurações:', error);
+                showNotification('❌ Erro ao salvar configurações', 'error');
+            }
         });
 
         // Data Management
@@ -375,11 +411,28 @@
         const savePreferences = document.getElementById('savePreferences');
 
         savePreferences.addEventListener('click', () => {
-            const settings = storage.getSettings();
-            settings.autoSave = autoSave.checked;
-            settings.notifications = notifications.checked;
-            storage.saveSettings(settings);
-            showNotification('Preferências salvas!', 'success');
+            try {
+                const settings = storage.getSettings();
+                settings.autoSave = autoSave.checked;
+                settings.notifications = notifications.checked;
+                storage.saveSettings(settings);
+                
+                console.log('✅ Preferências salvas:', { autoSave: autoSave.checked, notifications: notifications.checked });
+                
+                // Feedback visual
+                savePreferences.innerHTML = '<span>✅ Salvo com sucesso!</span>';
+                savePreferences.classList.add('bg-rose-700');
+                
+                setTimeout(() => {
+                    savePreferences.innerHTML = 'Salvar Preferências';
+                    savePreferences.classList.remove('bg-rose-700');
+                }, 2000);
+                
+                showNotification('✅ Preferências salvas!', 'success');
+            } catch (error) {
+                console.error('Erro ao salvar preferências:', error);
+                showNotification('❌ Erro ao salvar preferências', 'error');
+            }
         });
 
         function loadSettings() {

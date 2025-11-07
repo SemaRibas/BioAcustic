@@ -1152,11 +1152,17 @@
             trainingPanel.scrollIntoView({ behavior: 'smooth' });
             resetCharts();
             
-            const totalEpochs = 20;
+            // Carregar configurações salvas do modelo
+            const settings = storage.getSettings();
+            const totalEpochs = settings.modelConfig.epochs || 20;
+            const batchSize = settings.modelConfig.batchSize || 16;
+            
+            console.log('📊 Usando configurações:', { epochs: totalEpochs, batchSize });
+            
             document.getElementById('totalEpochs').textContent = totalEpochs;
 
             try {
-                await trainer.train(totalEpochs, 16, (epoch, logs) => {
+                await trainer.train(totalEpochs, batchSize, (epoch, logs) => {
                     // Atualizar progresso
                     const progress = ((epoch + 1) / totalEpochs) * 100;
                     document.getElementById('progressBar').style.width = progress + '%';
