@@ -88,22 +88,125 @@ export class UIManager {
     // FUNÇÃO ANTIGA (showAlert) REMOVIDA
     // As chamadas a ela devem ser substituídas por showNotification
     
-    updateModelStatus(status, message) {
+    updateModelStatus(status, message, details = {}) {
         const statusDiv = document.getElementById('modelStatus');
-        if (!statusDiv) return;
+        const iconDiv = document.getElementById('modelStatusIcon');
+        const labelSpan = document.getElementById('modelStatusLabel');
+        const descP = document.getElementById('modelStatusDesc');
+        const badgeSpan = document.getElementById('modelStatusBadge');
+        const loadingBar = document.getElementById('modelLoadingBar');
+        const actionDiv = document.getElementById('modelStatusAction');
+        
+        if (!statusDiv || !iconDiv || !labelSpan || !descP) return;
         
         if (status === 'success') {
-            statusDiv.innerHTML = `✅ ${message}`;
-            statusDiv.style.color = 'white';
-            statusDiv.style.background = 'rgba(255, 255, 255, 0.2)';
-            statusDiv.style.borderColor = 'var(--primary-300)';
+            // Estilo de Sucesso
+            statusDiv.className = 'bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl shadow-lg border-2 border-emerald-300 overflow-hidden transition-all duration-300 hover:shadow-xl';
+            
+            iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center';
+            iconDiv.innerHTML = `
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+            `;
+            
+            labelSpan.textContent = message || 'Modelo Carregado';
+            labelSpan.className = 'text-sm font-bold text-emerald-900';
+            
+            descP.textContent = details.description || `${details.species || 'N/A'} espécies • Treinado com ${details.samples || 'N/A'} amostras`;
+            descP.className = 'text-xs text-emerald-700 truncate';
+            
+            badgeSpan.textContent = 'Pronto';
+            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-200 text-emerald-800';
+            badgeSpan.classList.remove('hidden');
+            
+            if (loadingBar) loadingBar.classList.add('hidden');
+            
         } else if (status === 'error') {
-            statusDiv.innerHTML = `❌ ${message}`;
-            statusDiv.style.color = 'white';
-            statusDiv.style.background = 'rgba(220, 38, 38, 0.5)'; // Vermelho
-            statusDiv.style.borderColor = 'var(--error-300)';
+            // Estilo de Erro
+            statusDiv.className = 'bg-gradient-to-r from-red-50 to-orange-50 rounded-xl shadow-lg border-2 border-red-300 overflow-hidden transition-all duration-300 hover:shadow-xl';
+            
+            iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full bg-red-500 flex items-center justify-center';
+            iconDiv.innerHTML = `
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            `;
+            
+            labelSpan.textContent = message || 'Erro ao Carregar';
+            labelSpan.className = 'text-sm font-bold text-red-900';
+            
+            descP.textContent = details.description || 'Nenhum modelo encontrado. Treine um modelo primeiro.';
+            descP.className = 'text-xs text-red-700 truncate';
+            
+            badgeSpan.textContent = 'Erro';
+            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-red-200 text-red-800';
+            badgeSpan.classList.remove('hidden');
+            
+            if (loadingBar) loadingBar.classList.add('hidden');
+            
+            // Mostrar link para treinamento
+            if (actionDiv) {
+                actionDiv.innerHTML = `
+                    <a href="train.html" class="text-xs font-semibold text-red-600 hover:text-red-700 transition-colors flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                        Treinar
+                    </a>
+                `;
+                actionDiv.classList.remove('hidden');
+            }
+            
+        } else if (status === 'warning') {
+            // Estilo de Aviso
+            statusDiv.className = 'bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl shadow-lg border-2 border-yellow-300 overflow-hidden transition-all duration-300 hover:shadow-xl';
+            
+            iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center';
+            iconDiv.innerHTML = `
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            `;
+            
+            labelSpan.textContent = message || 'Atenção';
+            labelSpan.className = 'text-sm font-bold text-yellow-900';
+            
+            descP.textContent = details.description || 'Verificação necessária';
+            descP.className = 'text-xs text-yellow-700 truncate';
+            
+            badgeSpan.textContent = 'Aviso';
+            badgeSpan.className = 'px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-200 text-yellow-800';
+            badgeSpan.classList.remove('hidden');
+            
+            if (loadingBar) loadingBar.classList.add('hidden');
+            
         } else {
-            statusDiv.innerHTML = `<span class="spinner" style="border-top-color: white;"></span> ${message}`;
+            // Estilo de Loading (padrão)
+            statusDiv.className = 'bg-white rounded-xl shadow-lg border-2 border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl';
+            
+            iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center';
+            iconDiv.innerHTML = `
+                <svg class="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            `;
+            
+            labelSpan.textContent = message || 'Carregando Modelo';
+            labelSpan.className = 'text-sm font-bold text-gray-900';
+            
+            descP.textContent = details.description || 'Inicializando rede neural...';
+            descP.className = 'text-xs text-gray-600 truncate';
+            
+            badgeSpan.classList.add('hidden');
+            
+            if (loadingBar) {
+                loadingBar.classList.remove('hidden');
+                loadingBar.innerHTML = '<div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 animate-pulse" style="width: 60%"></div>';
+            }
+            
+            if (actionDiv) actionDiv.classList.add('hidden');
         }
     }
     

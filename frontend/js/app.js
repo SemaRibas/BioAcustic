@@ -33,7 +33,14 @@ class BioAcusticApp {
             // Carregar modelo
             // O caminho é relativo ao index.html
             await this.modelManager.loadModel('./assets/model/model.json');
-            this.uiManager.updateModelStatus('success', 'Modelo Carregado');
+            
+            // Obter informações do modelo para exibição
+            const modelInfo = this.modelManager.getModelInfo();
+            this.uiManager.updateModelStatus('success', 'Modelo Carregado', {
+                description: `${modelInfo.classes?.length || 0} espécies • Última atualização: ${new Date(modelInfo.lastTrained || Date.now()).toLocaleDateString('pt-BR')}`,
+                species: modelInfo.classes?.length || 0,
+                samples: modelInfo.totalSamples || 0
+            });
             
             // Configurar event listeners
             this.setupEventListeners();
@@ -45,15 +52,19 @@ class BioAcusticApp {
             
             // Verificar se é problema de modelo não treinado
             if (error.message.includes('ainda não foi treinado') || error.message.includes('DEMO_MODE')) {
-                this.uiManager.updateModelStatus('error', 'Modelo não treinado');
+                this.uiManager.updateModelStatus('error', 'Modelo Não Treinado', {
+                    description: 'Acesse a página de treinamento para criar seu primeiro modelo'
+                });
                 // ATUALIZADO: Usando showNotification
                 this.uiManager.showNotification(
-                    '🎓 Modelo não treinado. Acesse a página "Treinar Modelo" ou execute o pipeline Python.',
+                    '🎓 Modelo não treinado. Acesse a página "Treinar Modelo" para começar.',
                     'info',
                     10000 // Manter a mensagem por 10s
                 );
             } else {
-                this.uiManager.updateModelStatus('error', 'Erro ao carregar');
+                this.uiManager.updateModelStatus('error', 'Erro ao Carregar Modelo', {
+                    description: error.message || 'Verifique se o modelo foi treinado corretamente'
+                });
                 // ATUALIZADO: Usando showNotification
                 this.uiManager.showNotification(`Erro ao carregar modelo: ${error.message}`, 'error');
             }
