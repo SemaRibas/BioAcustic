@@ -265,10 +265,6 @@
         const navbar = new Navbar();
         navbar.mount();
 
-        // Load settings on start
-        loadSettings();
-        loadStorageInfo();
-
         // Model Settings
         const threshold = document.getElementById('threshold');
         const thresholdValue = document.getElementById('thresholdValue');
@@ -276,6 +272,7 @@
         const epochs = document.getElementById('epochs');
         const saveModelSettings = document.getElementById('saveModelSettings');
 
+        // Atualizar o display do threshold quando o usuário move o slider
         threshold.addEventListener('input', (e) => {
             thresholdValue.textContent = parseFloat(e.target.value).toFixed(2);
         });
@@ -481,6 +478,10 @@
                 notification.remove();
             }, 3000);
         }
+
+        // IMPORTANTE: Carregar configurações após todas as funções serem definidas
+        loadSettings();
+        loadStorageInfo();
     </script>
 </body>
 </html>
