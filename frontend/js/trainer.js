@@ -150,12 +150,41 @@ export class BrowserTrainer {
             }
         }
         
+        // CRÍTICO: Embaralhar dados antes de criar tensores
+        // Isso garante que validationSplit pegue amostras de TODAS as classes
+        // Sem isso, validação pode pegar apenas as últimas classes adicionadas
+        console.log('🔀 Embaralhando dados para distribuição uniforme...');
+        const indices = Array.from({length: X.length}, (_, i) => i);
+        
+        // Fisher-Yates shuffle (embaralhamento perfeito)
+        for (let i = indices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+        
+        // Reorganizar X e y de acordo com os índices embaralhados
+        const X_shuffled = indices.map(i => X[i]);
+        const y_shuffled = indices.map(i => y[i]);
+        
+        // Verificar distribuição de classes
+        const classDistribution = new Map();
+        for (const classIdx of y_shuffled) {
+            const count = classDistribution.get(classIdx) || 0;
+            classDistribution.set(classIdx, count + 1);
+        }
+        
+        console.log('📊 Distribuição de classes no dataset:');
+        for (const [classIdx, count] of classDistribution.entries()) {
+            const speciesName = this.classNames[classIdx];
+            console.log(`   • ${speciesName}: ${count} amostras (${(count / X.length * 100).toFixed(1)}%)`);
+        }
+        
         // Converter para tensores usando tidy para gerenciamento automático de memória
         return tf.tidy(() => {
-            const xs = tf.tensor4d(X);
-            const ys = tf.oneHot(tf.tensor1d(y, 'int32'), this.classNames.length);
+            const xs = tf.tensor4d(X_shuffled);
+            const ys = tf.oneHot(tf.tensor1d(y_shuffled, 'int32'), this.classNames.length);
             
-            console.log(`✅ Dataset preparado: ${X.length} amostras`);
+            console.log(`✅ Dataset preparado: ${X.length} amostras (embaralhadas)`);
             console.log(`   Shape: ${xs.shape}`);
             console.log(`   Memória GPU: ${(tf.memory().numBytes / 1024 / 1024).toFixed(2)} MB`);
             
@@ -220,14 +249,20 @@ export class BrowserTrainer {
             
             // Com poucas amostras, usar validação menor
             const validationSplit = totalSamples < 100 ? 0.15 : 0.2;
-            console.log(`   ⚙️  Validação: ${(validationSplit * 100).toFixed(0)}% dos dados`);
+            const trainingSamples = Math.floor(totalSamples * (1 - validationSplit));
+            const validationSamples = totalSamples - trainingSamples;
+            
+            console.log(`   ⚙️  Divisão dos dados:`);
+            console.log(`      • Treinamento: ${trainingSamples} amostras (${((1 - validationSplit) * 100).toFixed(0)}%)`);
+            console.log(`      • Validação: ${validationSamples} amostras (${(validationSplit * 100).toFixed(0)}%)`);
+            console.log(`   💡 Validação testa se o modelo generaliza para dados não vistos`);
             
             // Treinar com gerenciamento de memória melhorado
             const history = await this.model.fit(xs, ys, {
                 epochs: epochs,
                 batchSize: adjustedBatchSize,
                 validationSplit: validationSplit,
-                shuffle: true,
+                shuffle: true, // Embaralha novamente dentro de cada época
                 callbacks: {
                     onEpochBegin: async (epoch) => {
                         // Pausar a cada época para liberar GPU
